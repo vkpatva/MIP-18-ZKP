@@ -1,3 +1,27 @@
+---
+license: mit
+language:
+  - en
+tags:
+  - loan-default
+  - credit-risk
+  - classification
+  - regression
+  - xgboost
+  - gradient-boosting
+  - tabular
+  - finance
+  - supervised-learning
+  - feature-engineering
+datasets:
+  - yasserh/loan-default-dataset
+metrics:
+  - f1
+  - roc_auc
+  - accuracy
+library_name: sklearn
+pipeline_tag: tabular-classification
+---
 # 🏦 Loan Default Prediction — Credit Risk EDA & Modeling
 
 **Author:** Uri Sivan  
