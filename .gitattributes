@@ -51,3 +51,4 @@ plots\?feature_importance.png filter=lfs diff=lfs merge=lfs -text
 plots/feature_importance.png filter=lfs diff=lfs merge=lfs -text
 plots/income_loan_scatter.png filter=lfs diff=lfs merge=lfs -text
 plots/ltv_dti_heatmap.png filter=lfs diff=lfs merge=lfs -text
+plots/roc_curves.png filter=lfs diff=lfs merge=lfs -text
