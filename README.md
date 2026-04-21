@@ -99,6 +99,7 @@ feature. The ratio captures affordability stress better than either raw variable
 > *"Between income, loan amount, and loan-to-income — which decile gradient is steepest?"*
 
 ![Default Rate by Decile](default_by_decile.png)
+![Income VS Loan amount](income_loan_scatter.png)
 
 **Finding:**
 - **Income** has the strongest and most consistent gradient: 36.8% (decile 0) → 19.5% (decile 7)
