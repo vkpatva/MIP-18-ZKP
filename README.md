@@ -181,7 +181,7 @@ Missingness co-occurrence heatmap computed before any imputation.
 
 ### 2.4 Data Cleaning Summary
 
-![Cleaning Summary](cleaning_summary.png)
+![Cleaning Summary](plots/cleaning_summary.png)
 
 **Total rows dropped:** 1,841 (1.2%) | **Retained:** 146,829 (98.8%)
 
@@ -192,7 +192,7 @@ Missingness co-occurrence heatmap computed before any imputation.
 
 > *"Is the combination of high LTV and high DTI more dangerous than either alone?"*
 
-![LTV DTI Heatmap](ltv_dti_heatmap.png)
+![LTV DTI Heatmap](plots/ltv_dti_heatmap.png)
 
 **Finding:**
 The peak default rate (68.9%) occurs at LTV Q3 (75–90%) combined with DTI
@@ -212,7 +212,7 @@ zone. This cell reaches 3× the dataset average default rate.
 
 > *"Is affordability stress — not absolute income or loan size — the real driver?"*
 
-![Income VS Loan amount](income_loan_scatter.png)
+![Income VS Loan amount](plots/income_loan_scatter.png)
 
 **Finding:**
 Defaulters earn ~32% less but borrow only ~10% less than repaid borrowers.
@@ -230,7 +230,7 @@ feature. The ratio captures affordability stress better than either raw variable
 
 > *"Between income, loan amount, and loan-to-income — which decile gradient is steepest?"*
 
-![Default Rate by Decile](default_by_decile.png)
+![Default Rate by Decile](plots/default_by_decile.png)
 
 **Finding:**
 - **Income** has the strongest and most consistent gradient: 36.8% (decile 0) → 19.5% (decile 7)
@@ -250,7 +250,7 @@ for the top LTI decile only — do not use raw LTI as a continuous predictor.
 
 > *"Are young or elderly borrowers in specific regions disproportionately risky?"*
 
-![Age Region Heatmap](age_region_heatmap.png)
+![Age Region Heatmap](plots/age_region_heatmap.png)
 
 **Finding:**
 North-East region shows two extreme cells:
@@ -273,7 +273,7 @@ Used North as reference category in one-hot encoding.
 
 > *"Do joint applicants systematically outperform individual borrowers at every age?"*
 
-![Age Gender Default](age_gender_default.png)
+![Age Gender Default](plots/age_gender_default.png)
 
 **Finding:**
 Joint applicants have the lowest default rate at every single age group
@@ -364,7 +364,7 @@ or credit profile in this dataset.
 
 ### Cluster Profiles
 
-![Cluster Profiles](cluster_profiles.png)
+![Cluster Profiles](plots/cluster_profiles.png)
 
 | Cluster | N | Default Rate | Label |
 |---|---|---|---|
@@ -379,7 +379,7 @@ or credit profile in this dataset.
 
 ## 📈 Part 5: Three Improved Regression Models
 
-![ROC Curves](roc_curves.png)
+![ROC Curves](plots/roc_curves.png)
 
 | Model | ROC-AUC | F1 (Default) | Accuracy | R² |
 |---|---|---|---|---|
@@ -419,11 +419,8 @@ Flagging a safe loan = opportunity cost only.
 
 ## 🧠 Part 8: Classification Models
 
-| Model | Architecture |
-|---|---|
-| Random Forest | 300 trees, max_depth=12, class_weight=balanced |
-| XGBoost | 300 rounds, lr=0.05, max_depth=5, subsample=0.8 |
-| K-Nearest Neighbors | K=15, distance weights, Euclidean metric |
+![Three Classification Models - Evaluation](plots/Three Classification Models - Evaluation .png)
+
 
 *(Fill in final metric table after Part 8 runs)*
 
