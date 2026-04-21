@@ -48,13 +48,145 @@ exported for deployment.
 
 ---
 
-## ❓ Research Questions
+## ❓ Research Question
 
+Given the loan application data, the primary research question is to develop and evaluate models that can accurately predict loan default (classification) and, in a regression context, predict the likelihood of loan default. This analysis aims to identify key features and patterns that drive default risk, thereby providing insights for better risk assessment and decision-making for financial institutions.
 The EDA was structured around five concrete business questions.
 Each question was answered with a specific visualization and a
 statistically-grounded finding.
 
+
+
+## 🗺️ Full Project Workflow
+
+```
+Raw Dataset (148,670 rows × 28 features)
+    ↓
+Part 2: EDA
+  ├── Column cleanup and renaming
+  ├── Missingness co-occurrence analysis
+  ├── Domain-grounded imputation (8 columns)
+  ├── Invalid value removal
+  ├── Outlier detection + log transforms
+  ├── Duplicate removal
+  ├── Descriptive statistics
+  ├── Categorical chi-square + Cramér's V
+  ├── Univariate analysis (5 numeric features)
+  └── 5 bivariate research questions answered
+    ↓
+Part 3: Baseline Linear Regression
+  ├── 34 raw features, default parameters
+  ├── 80/20 stratified split (SEED=42)
+  ├── StandardScaler on numeric columns
+  ├── MAE=0.3227, RMSE=0.3944, R²=0.1555
+  └── Feature importance via coefficients
+    ↓
+Part 4: Feature Engineering
+  ├── 10 new engineered features (ratios + binary flags)
+  ├── ColumnTransformer pipeline (Scaler + OHE)
+  ├── PCA: 9 numeric → 5 components (98.6% variance)
+  ├── K-Means clustering K=4 (elbow method)
+  ├── t-SNE + PCA cluster visualization
+  └── Final: 54-feature matrix
+    ↓
+Part 5: Three Improved Regression Models
+  ├── Linear Regression (engineered) — AUC 0.809
+  ├── Logistic Regression — AUC 0.812
+  ├── Gradient Boosting — AUC 0.882 ← WINNER
+  ├── ROC + Precision-Recall curves
+  ├── Confusion matrices with FNR/FPR
+  └── Feature importance (coefficients + impurity)
+    ↓
+Upload best regression model → HuggingFace
+    ↓
+Part 7: Regression → Classification
+  ├── Business rule thresholds (0.20 / 0.40)
+  ├── 3 classes: Low Risk / Medium Risk / High Risk
+  └── Class balance analysis
+    ↓
+Part 8: Three Classification Models
+  ├── Random Forest (300 trees, balanced)
+  ├── XGBoost (300 rounds, lr=0.05) ← WINNER
+  ├── K-Nearest Neighbors (K=15, distance weights)
+  ├── Classification reports + confusion matrices
+  └── Feature importance comparison
+    ↓
+Upload best classification model → HuggingFace
+Upload notebook → HuggingFace
+Write README → HuggingFace
+Record presentation → Add link to README
+```
+
 ---
+
+## 📂 Repository Contents
+
+| File | Description |
+|---|---|
+| `Uri_Sivan_Assignment_2.ipynb` | Full notebook — all parts |
+| `best_model_xgboost.pkl` | Winning classification model (XGBoost) |
+| `best_regression_model.pkl` | Winning regression model (Gradient Boosting) |
+| `README.md` | This file |
+
+
+---
+
+## 📊 Dataset Description
+
+**Source:** Kaggle — Loan Default Dataset  
+**Size:** ~147,000 rows × 28 features  
+**After cleaning:** 146,829 rows × 27 features  
+**Target:** `Status` — binary (0 = Repaid, 1 = Defaulted)  
+**Class distribution:** 75.66% repaid / 24.34% defaulted
+
+---
+
+## 🔍 Part 2: Exploratory Data Analysis
+
+### 2.1 Initial Column Cleanup
+- Renamed all 28 columns to readable snake_case names
+- Dropped 5 zero-variance / identifier columns:
+  `loan_id`, `year`, `construction_type`, `secured_by`, `security_type`
+- Dropped `loan_purpose` — undocumented codes with no codebook
+- Relabeled all categorical values from codes to readable strings
+
+### 2.2 Missing Value Analysis
+
+Missingness co-occurrence heatmap computed before any imputation.
+
+| Column | Missing | Strategy |
+|---|---|---|
+| `term_months` | 41 | Drop rows |
+| `negative_amortization` | 121 | Drop rows |
+| `age_group` + `submission_channel` | 200 | Drop rows |
+| `approved_in_advance` | 908 | Drop rows |
+| `loan_limit` | 3,344 | Mode imputation |
+| `income` | 10,410 | 2D binning: loan decile × credit band |
+| `property_value` + `LTV` | 15,131 | Back-derive from median LTV by decile |
+| `debt_to_income_ratio` | 24,121 | 2D binning: credit band × income decile |
+| `interest_rate` | 36,439 | 2D binning: credit band × LTV band |
+
+### 2.3 Feature Exclusions
+
+| Feature | Reason |
+|---|---|
+| `credit_score` | Pearson r = 0.003; near-uniform distribution |
+| `interest_rate` | Post-approval pricing — leakage |
+| `interest_rate_spread` | Derived from excluded leakage column |
+| `credit_worthiness` | Lender's internal risk classification — leakage |
+| `credit_bureau` | Cramér's V = 0.5929 — probable structural leakage |
+| `coapplicant_credit_bureau` | Same leakage concern |
+| `upfront_charges` | 0% default in no-fee segment — data artifact |
+| `open_credit_flag` | Cramér's V < 0.01 — no signal |
+
+### 2.4 Data Cleaning Summary
+
+![Cleaning Summary](cleaning_summary.png)
+
+**Total rows dropped:** 1,841 (1.2%) | **Retained:** 146,829 (98.8%)
+
+---
+### 2.5 bivariate research questions
 
 ### Q1 — Does leverage (LTV) combined with debt burden (DTI) create compound risk?
 
@@ -157,143 +289,6 @@ safest identifiable demographic segment. Used joint as reference baseline
 in one-hot encoding.
 
 ---
-
-## 🗺️ Full Project Workflow
-
-```
-Raw Dataset (148,670 rows × 28 features)
-    ↓
-Part 2: EDA
-  ├── Column cleanup and renaming
-  ├── Missingness co-occurrence analysis
-  ├── Domain-grounded imputation (8 columns)
-  ├── Invalid value removal
-  ├── Outlier detection + log transforms
-  ├── Duplicate removal
-  ├── Descriptive statistics
-  ├── Categorical chi-square + Cramér's V
-  ├── Univariate analysis (5 numeric features)
-  └── 5 bivariate research questions answered
-    ↓
-Part 3: Baseline Linear Regression
-  ├── 34 raw features, default parameters
-  ├── 80/20 stratified split (SEED=42)
-  ├── StandardScaler on numeric columns
-  ├── MAE=0.3227, RMSE=0.3944, R²=0.1555
-  └── Feature importance via coefficients
-    ↓
-Part 4: Feature Engineering
-  ├── 10 new engineered features (ratios + binary flags)
-  ├── ColumnTransformer pipeline (Scaler + OHE)
-  ├── PCA: 9 numeric → 5 components (98.6% variance)
-  ├── K-Means clustering K=4 (elbow method)
-  ├── t-SNE + PCA cluster visualization
-  └── Final: 54-feature matrix
-    ↓
-Part 5: Three Improved Regression Models
-  ├── Linear Regression (engineered) — AUC 0.809
-  ├── Logistic Regression — AUC 0.812
-  ├── Gradient Boosting — AUC 0.882 ← WINNER
-  ├── ROC + Precision-Recall curves
-  ├── Confusion matrices with FNR/FPR
-  └── Feature importance (coefficients + impurity)
-    ↓
-Upload best regression model → HuggingFace
-    ↓
-Part 7: Regression → Classification
-  ├── Business rule thresholds (0.20 / 0.40)
-  ├── 3 classes: Low Risk / Medium Risk / High Risk
-  └── Class balance analysis
-    ↓
-Part 8: Three Classification Models
-  ├── Random Forest (300 trees, balanced)
-  ├── XGBoost (300 rounds, lr=0.05) ← WINNER
-  ├── K-Nearest Neighbors (K=15, distance weights)
-  ├── Classification reports + confusion matrices
-  └── Feature importance comparison
-    ↓
-Upload best classification model → HuggingFace
-Upload notebook → HuggingFace
-Write README → HuggingFace
-Record presentation → Add link to README
-```
-
----
-
-## 📂 Repository Contents
-
-| File | Description |
-|---|---|
-| `Uri_Sivan_Assignment_2.ipynb` | Full notebook — all parts |
-| `best_model_xgboost.pkl` | Winning classification model (XGBoost) |
-| `best_regression_model.pkl` | Winning regression model (Gradient Boosting) |
-| `README.md` | This file |
-| `cleaning_summary.png` | Data cleaning progression chart |
-| `ltv_dti_heatmap.png` | Q1 — LTV × DTI compound risk |
-| `income_vs_loan.png` | Q2 — Income vs loan amount scatter |
-| `default_by_decile.png` | Q3 — Default rate by feature decile |
-| `age_region_heatmap.png` | Q4 — Age × region interaction |
-| `age_gender_default.png` | Q5 — Age × gender default rates |
-| `cluster_profiles.png` | K-Means cluster default rates |
-| `roc_curves.png` | ROC curves — all models |
-| `feature_importance.png` | XGBoost feature importance |
-
----
-
-## 📊 Dataset Description
-
-**Source:** Kaggle — Loan Default Dataset  
-**Size:** ~147,000 rows × 28 features  
-**After cleaning:** 146,829 rows × 27 features  
-**Target:** `Status` — binary (0 = Repaid, 1 = Defaulted)  
-**Class distribution:** 75.66% repaid / 24.34% defaulted
-
----
-
-## 🔍 Part 2: Exploratory Data Analysis
-
-### 2.1 Initial Column Cleanup
-- Renamed all 28 columns to readable snake_case names
-- Dropped 5 zero-variance / identifier columns:
-  `loan_id`, `year`, `construction_type`, `secured_by`, `security_type`
-- Dropped `loan_purpose` — undocumented codes with no codebook
-- Relabeled all categorical values from codes to readable strings
-
-### 2.2 Missing Value Analysis
-
-Missingness co-occurrence heatmap computed before any imputation.
-
-| Column | Missing | Strategy |
-|---|---|---|
-| `term_months` | 41 | Drop rows |
-| `negative_amortization` | 121 | Drop rows |
-| `age_group` + `submission_channel` | 200 | Drop rows |
-| `approved_in_advance` | 908 | Drop rows |
-| `loan_limit` | 3,344 | Mode imputation |
-| `income` | 10,410 | 2D binning: loan decile × credit band |
-| `property_value` + `LTV` | 15,131 | Back-derive from median LTV by decile |
-| `debt_to_income_ratio` | 24,121 | 2D binning: credit band × income decile |
-| `interest_rate` | 36,439 | 2D binning: credit band × LTV band |
-
-### 2.3 Feature Exclusions
-
-| Feature | Reason |
-|---|---|
-| `credit_score` | Pearson r = 0.003; near-uniform distribution |
-| `interest_rate` | Post-approval pricing — leakage |
-| `interest_rate_spread` | Derived from excluded leakage column |
-| `credit_worthiness` | Lender's internal risk classification — leakage |
-| `credit_bureau` | Cramér's V = 0.5929 — probable structural leakage |
-| `coapplicant_credit_bureau` | Same leakage concern |
-| `upfront_charges` | 0% default in no-fee segment — data artifact |
-| `open_credit_flag` | Cramér's V < 0.01 — no signal |
-
-### 2.4 Data Cleaning Summary
-
-![Cleaning Summary](cleaning_summary.png)
-
-**Total rows dropped:** 1,841 (1.2%) | **Retained:** 146,829 (98.8%)
-
 ---
 
 ## 📉 Part 3: Baseline Linear Regression
