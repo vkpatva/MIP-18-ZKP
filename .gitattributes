@@ -44,3 +44,4 @@ feature_importance.png filter=lfs diff=lfs merge=lfs -text
 roc_curves.png filter=lfs diff=lfs merge=lfs -text
 plots/age_gender_default.png filter=lfs diff=lfs merge=lfs -text
 plots/age_region_heatmap.png filter=lfs diff=lfs merge=lfs -text
+data.csv filter=lfs diff=lfs merge=lfs -text
