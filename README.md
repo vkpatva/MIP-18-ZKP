@@ -80,7 +80,7 @@ zone. This cell reaches 3× the dataset average default rate.
 
 > *"Is affordability stress — not absolute income or loan size — the real driver?"*
 
-![Income vs Loan Amount](income_vs_loan.png)
+![Income VS Loan amount](income_loan_scatter.png)
 
 **Finding:**
 Defaulters earn ~32% less but borrow only ~10% less than repaid borrowers.
@@ -99,7 +99,6 @@ feature. The ratio captures affordability stress better than either raw variable
 > *"Between income, loan amount, and loan-to-income — which decile gradient is steepest?"*
 
 ![Default Rate by Decile](default_by_decile.png)
-![Income VS Loan amount](income_loan_scatter.png)
 
 **Finding:**
 - **Income** has the strongest and most consistent gradient: 36.8% (decile 0) → 19.5% (decile 7)
