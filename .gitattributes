@@ -47,3 +47,4 @@ plots/age_region_heatmap.png filter=lfs diff=lfs merge=lfs -text
 data.csv filter=lfs diff=lfs merge=lfs -text
 plots/cleaning_summary.png filter=lfs diff=lfs merge=lfs -text
 plots/default_by_decile.png filter=lfs diff=lfs merge=lfs -text
+plots\?feature_importance.png filter=lfs diff=lfs merge=lfs -text
