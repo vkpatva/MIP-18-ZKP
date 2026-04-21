@@ -380,7 +380,7 @@ or credit profile in this dataset.
 ## 📈 Part 5: Three Improved Regression Models
 
 ![ROC Curves](plots/roc_curves.png)
-
+![confusion_matrices_part5](plots/confusion_matrices_part5.png)
 | Model | ROC-AUC | F1 (Default) | Accuracy | R² |
 |---|---|---|---|---|
 | Linear Regression (Baseline) | 0.693 | 0.244 | 77.8% | 0.109 |
@@ -421,7 +421,7 @@ Flagging a safe loan = opportunity cost only.
 
 ![Three Classification Models - Evaluation](plots/three_models_evaluation.png)
 
-
+![confusion_matrices_part8](plots/confusion_matrices_part8.png)
 *(Fill in final metric table after Part 8 runs)*
 
 **Why recall > precision and false negatives are more critical:**
