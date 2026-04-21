@@ -419,7 +419,7 @@ Flagging a safe loan = opportunity cost only.
 
 ## 🧠 Part 8: Classification Models
 
-![Three Classification Models - Evaluation](plots/Three Classification Models - Evaluation .png)
+![Three Classification Models - Evaluation](plots/three_models_evaluation.png)
 
 
 *(Fill in final metric table after Part 8 runs)*
