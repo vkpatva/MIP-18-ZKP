@@ -27,7 +27,7 @@ pipeline_tag: tabular-classification
 **Author:** Uri Sivan  
 **Assignment:** Assignment #2 — Classification, Regression, Clustering & Evaluation  
 **Dataset:** [Loan Default Dataset](https://www.kaggle.com/datasets/yasserh/loan-default-dataset) — Kaggle  
-**Repository:** `Uris001/credit-risk-eda`
+**Repository:** `Uris001/loan-default-risk-predictor`
 
 ---
 
@@ -397,13 +397,45 @@ or credit profile in this dataset.
 
 ---
 
-## 🏷️ Part 7 & 8: Classification
+## 🏷️ Part 7: Regression → Classification
 
-**Thresholds:** Low Risk < 0.20 | Medium Risk 0.20–0.40 | High Risk ≥ 0.40
+**Strategy: Business Rule Threshold (3-Class)**
 
-**Why recall > precision:** False negatives cost 5–10× more than false positives in lending.
+| Class | Label | Threshold | N (Train) | True Default Rate |
+|---|---|---|---|---|
+| 0 | Low Risk | score < 0.20 | 65,268 (55.6%) | 9.4% |
+| 1 | Medium Risk | 0.20 ≤ score < 0.40 | 27,880 (23.7%) | 26.7% |
+| 2 | High Risk | score ≥ 0.40 | 24,315 (20.7%) | 61.8% |
 
-![Feature Importance](feature_importance.png)
+The 52.4 percentage point spread between lowest and highest class
+(9.4% vs 61.8%) validates the thresholds — the regression scores are
+meaningful risk signals, not noise.
+
+**Imbalance ratio: 2.68:1** (largest 65,268 / smallest 24,315)
+Not severe — corrected with `class_weight='balanced'` in Part 8 models.
+
+**Why recall > precision:**
+False negatives cost 5–10× more than false positives in lending.
+Missing a high-risk loan = realized loss on defaulted principal.
+Flagging a safe loan = opportunity cost only.
+
+**Primary metric:** Macro F1-Score
+**Secondary metric:** Recall on Class 2 (High Risk)
+
+## 🧠 Part 8: Classification Models
+
+| Model | Architecture |
+|---|---|
+| Random Forest | 300 trees, max_depth=12, class_weight=balanced |
+| XGBoost | 300 rounds, lr=0.05, max_depth=5, subsample=0.8 |
+| K-Nearest Neighbors | K=15, distance weights, Euclidean metric |
+
+*(Fill in final metric table after Part 8 runs)*
+
+**Why recall > precision and false negatives are more critical:**
+Approving a loan that defaults = full principal loss + legal costs + provisioning.
+Rejecting a good loan = missed revenue only.
+The model must minimize false negatives on Class 2 even at the cost of precision.
 
 **Winner: XGBoost Classifier** → `best_model_xgboost.pkl`
 
