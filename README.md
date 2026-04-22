@@ -601,7 +601,7 @@ to model architecture only.
 
 **Feature importance — Part 5:**
 
-![Feature Importance](plots/feature_importance.png)
+![Feature Importance](plots/feature_imprtance_part_5.png)
 
 Top finding: `lump_sum_payment_flag_yes` is the strongest coefficient in both linear models
 (consistent with the baseline). In Gradient Boosting, `pca_1` (the wealth composite) and
