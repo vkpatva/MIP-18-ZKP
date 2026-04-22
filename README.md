@@ -263,7 +263,7 @@ Used North as reference category in one-hot encoding.
 
 > *"Do specific credit bureau and loan type combinations create extreme default concentrations?"*
 
-![Credit Bureau Loan Type Heatmap](credit_bureau_loan_type.png)
+![Credit Bureau Loan Type Heatmap](plots/credit_bureau_vs_loan_type.png)
 
 **Finding:**
 Three credit bureaus (CIB, CRIF, EXP) show realistic moderate default
