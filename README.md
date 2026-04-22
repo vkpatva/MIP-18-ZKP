@@ -707,10 +707,29 @@ n_iter=20, cv=3, scoring=f1_macro, random_state=42
 
 ![Threshold Analysis](plots/threshold_analysis.png)
 
-The threshold analysis reveals how Precision, Recall, and F1 for the High Risk class
-change as the classification threshold moves from 0.20 to 0.70. The optimal threshold
-(where F1 is maximized for Class 2) is identified and reported — this is operationally
-important because 0.50 is rarely the correct threshold for imbalanced multi-class problems.
+The threshold analysis consists of two panels:
+
+**Left panel — Precision, Recall, F1 vs Threshold:**
+All three metrics for Class 2 (High Risk) remain high across the full
+threshold range, confirming the model has strong discriminative power
+for the high-risk segment. The optimal threshold where F1 is maximized
+is **0.42** — slightly below the default 0.50. At 0.42, the model achieves
+the best balance between catching actual defaults (recall) and avoiding
+false alarms on safe loans (precision).
+
+**Right panel — High Risk Flag Rate vs Threshold:**
+Shows the percentage of test loans classified as High Risk at each threshold.
+The red dashed line marks the true Class 2 proportion in the test set (21.4%).
+At the optimal threshold (0.42), the model flags a slightly larger proportion
+than the true rate — acceptable given the asymmetric cost of missing a default
+vs incorrectly flagging a safe loan. At the default threshold (0.50), the model
+is more conservative — flagging fewer loans but missing more actual defaults.
+
+**Operational implication:**
+A lender deploying this model should use **threshold = 0.42** rather than the
+default 0.50. This captures more true High Risk loans at a modest increase in
+false alarms. Given that false negatives cost 5–10× more than false positives
+in lending, the 0.42 threshold is the operationally correct operating point.
 
 ### 8.6 Feature Importance — Classification Models
 
@@ -805,7 +824,9 @@ asymmetry.
 - Business rule thresholding with financial domain justification
 - Interactive Plotly visualizations (LTV×DTI heatmap + cluster profiles)
 - RandomizedSearchCV hyperparameter tuning
-- Threshold analysis plot for Class 2 optimal operating point
+- - Threshold analysis — two-panel plot identifying optimal threshold (0.42)
+  for Class 2 with flag rate volume analysis; shows operational deployment
+  trade-off between recall and false alarm rate at every threshold
 - ColumnTransformer pipeline — production-ready ML engineering
 - Comprehensive README with all research questions, findings, and embedded visuals
 
