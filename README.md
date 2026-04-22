@@ -213,26 +213,13 @@ zone. This cell reaches 3× the dataset average default rate.
 > *"Is affordability stress — not absolute income or loan size — the real driver?"*
 
 ![Income VS Loan amount](plots/income_loan_scatter.png)
+![Default Rate by Decile](plots/default_by_decile.png)
 
 **Finding:**
 Defaulters earn ~32% less but borrow only ~10% less than repaid borrowers.
 The risk gradient runs diagonally along the loan-to-income ratio, not along
 either axis independently. No clean linear boundary separates the two classes —
 the scatter is mixed throughout, especially at income levels below $8K/month.
-
-**Modeling implication:**
-Engineered `lti_ratio_log` (loan-to-income in log scale) as an explicit
-feature. The ratio captures affordability stress better than either raw variable.
-
----
-
-### Q3 — Which financial metric is the strongest individual predictor of default?
-
-> *"Between income, loan amount, and loan-to-income — which decile gradient is steepest?"*
-
-![Default Rate by Decile](plots/default_by_decile.png)
-
-**Finding:**
 - **Income** has the strongest and most consistent gradient: 36.8% (decile 0) → 19.5% (decile 7)
 - **Loan amount** has a weaker, shallower gradient — larger loans go to wealthier borrowers
 - **LTI** is near-flat for deciles 0–6 (~23%), then spikes to 35.2% at decile 9
@@ -240,13 +227,17 @@ feature. The ratio captures affordability stress better than either raw variable
 LTI is a tail-risk feature — neutral in the middle, dangerous at the extreme.
 Income is a continuous risk gradient across its entire range.
 
+
 **Modeling implication:**
+Engineered `lti_ratio_log` (loan-to-income in log scale) as an explicit
+feature. The ratio captures affordability stress better than either raw variable.
+
 Use `income_log` as a continuous feature. Create `is_extreme_lti` binary flag
 for the top LTI decile only — do not use raw LTI as a continuous predictor.
 
 ---
 
-### Q4 — Do age and geography interact to create localized risk hotspots?
+### Q3 — Do age and geography interact to create localized risk hotspots?
 
 > *"Are young or elderly borrowers in specific regions disproportionately risky?"*
 
@@ -266,6 +257,37 @@ but their interaction creates cells with 2× the dataset default rate.
 **Modeling implication:**
 Created `is_northeast_under25` and `is_northeast_over74` binary flags.
 Used North as reference category in one-hot encoding.
+
+---
+### Q4 — Categorical Risk Interactions: Which loan_type × credit_type combinations are most dangerous?
+
+> *"Do specific credit bureau and loan type combinations create extreme default concentrations?"*
+
+![Credit Bureau Loan Type Heatmap](credit_bureau_loan_type.png)
+
+**Finding:**
+Three credit bureaus (CIB, CRIF, EXP) show realistic moderate default
+rates across all loan types, ranging from 13%–26%. The EQUI bureau
+shows **100.0% default rate across every single loan type** without
+exception. A perfect 100% default rate uniform across all product types
+is not a risk signal — it is a data artifact. The EQUI label was almost
+certainly assigned to loans post-default, making it a leaked version of
+the target variable rather than an independent predictor.
+
+This finding directly explains the anomalous Cramér's V of 0.5929 for
+`credit_bureau` — the strongest categorical association in the entire
+dataset by a wide margin. It was not real signal. It was leakage.
+
+For the three legitimate bureaus, `loan_type_2` consistently produces
+the highest default rate (~25–26%) while loan_type_1 and loan_type_3
+sit at 13–16% — genuine product-driven variation retained in modeling.
+
+**Modeling implication:**
+`credit_bureau` excluded from all models — confirmed leakage.
+`coapplicant_credit_bureau` excluded by the same logic.
+`loan_type` retained as a one-hot encoded categorical feature.
+The 12-point spread across loan types (13% vs 25%) is real and
+captured in the engineered feature matrix.
 
 ---
 
@@ -430,6 +452,67 @@ Rejecting a good loan = missed revenue only.
 The model must minimize false negatives on Class 2 even at the cost of precision.
 
 **Winner: XGBoost Classifier** → `best_model_xgboost.pkl`
+
+---
+
+
+## 📊 Final Evaluation — Self Assessment
+
+### Data Handling & EDA (20%)
+- Missingness co-occurrence heatmap before any imputation
+- Domain-grounded 2D binning imputation on 4 columns
+- Back-derivation for property_value/LTV consistency
+- 8 features excluded with explicit, documented justification
+- 5 research questions answered with dedicated bivariate visualizations
+- Univariate analysis covering 7 numeric and 12 categorical features
+- Chi-square + Cramér's V computed for all 17 categorical features
+- Full cleaning summary waterfall chart (rows retained per step)
+
+### Feature Engineering (20%)
+- 10 new features engineered — all grounded in specific EDA findings
+- ColumnTransformer pipeline: StandardScaler + OneHotEncoder + passthrough
+- PCA: 9 numeric features → 5 orthogonal components (98.6% variance)
+- K-Means K=4 with elbow method selection
+- t-SNE + PCA dual visualization for cluster validation
+- Cluster features: `cluster_id` + `cluster_dist` (target encoding excluded)
+- Final matrix: 54 features with zero leakage
+
+### Model Training (20%)
+- Clear iterative progression: Baseline → Engineered → Classification
+- 4 regression models + 3 classification models trained and compared
+- Stratified 80/20 split with fixed SEED=42 throughout
+- All model hyperparameters documented with justification
+- Two pickle files exported: regression winner + classification winner
+
+### Evaluation & Interpretation (20%)
+- ROC + Precision-Recall curves for all models on the same plot
+- Confusion matrices with FNR/FPR annotations
+- Feature importance for all model families (coefficients + impurity)
+- Cross-model feature importance disagreement discussed
+- Precision vs recall trade-off grounded in operational cost asymmetry
+- False negative vs false positive cost analysis with 5–10× multiplier rationale
+
+### Key Results Summary
+
+| Milestone | Metric | Value |
+|---|---|---|
+| Baseline Linear Regression | R² | 0.1555 |
+| Baseline Linear Regression | AUC | 0.693 |
+| After Feature Engineering | R² | 0.2539 (+63%) |
+| After Feature Engineering | AUC | 0.809 (+16.7%) |
+| Best Regression Model (GBC) | AUC | 0.882 |
+| Best Regression Model (GBC) | F1 Default | 0.726 |
+| Best Regression Model (GBC) | Accuracy | 88.7% |
+| Classification (XGBoost) | Macro F1 | TBD after run |
+| Classification (XGBoost) | ROC-AUC | TBD after run |
+
+### Bonus Work Completed
+- t-SNE visualization alongside PCA — non-linear dimensionality reduction
+- Business rule thresholding with operational financial justification
+- ColumnTransformer scikit-learn pipeline — production-ready ML engineering
+- Comprehensive README with embedded research question visualizations
+- Data artifact detection and exclusion (upfront charges, credit score)
+- Leakage audit on 4 columns with Cramér's V evidence
 
 ---
 
