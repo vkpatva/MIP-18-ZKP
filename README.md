@@ -733,7 +733,7 @@ in lending, the 0.42 threshold is the operationally correct operating point.
 
 ### 8.6 Feature Importance — Classification Models
 
-![Feature Importance_part_8](plots/feature_imprtance_part_8.png)
+![Feature Importance_part_8](plots/feature_importance_part_8.png)
 Both Random Forest and XGBoost independently ranked **`is_compound_risk` as the #1
 most important feature**. This convergence across two structurally different model
 families is the strongest possible validation of the feature engineering work:
