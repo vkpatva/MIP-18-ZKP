@@ -55,3 +55,4 @@ plots/roc_curves.png filter=lfs diff=lfs merge=lfs -text
 plots/confusion_matrices_part5.png filter=lfs diff=lfs merge=lfs -text
 plots/confusion_matrices_part8.png filter=lfs diff=lfs merge=lfs -text
 Uri_Sivan_Assignment_2_Classification,_Regression,_Clustering,_Evaluation-2.ipynb filter=lfs diff=lfs merge=lfs -text
+feature_imprtance_part_5.png filter=lfs diff=lfs merge=lfs -text
