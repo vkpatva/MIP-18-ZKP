@@ -123,21 +123,7 @@ Record presentation → Add link to README
 | `best_model_xgboost.pkl` | Winning classification model (XGBoost tuned) |
 | `best_regression_model.pkl` | Winning regression model (Gradient Boosting) |
 | `README.md` | This file |
-| `plots/cleaning_summary.png` | Data cleaning waterfall chart |
-| `plots/ltv_dti_heatmap.png` | Q1 — LTV × DTI compound risk |
-| `plots/income_loan_scatter.png` | Q2 — Income vs loan amount scatter |
-| `plots/default_by_decile.png` | Q2/Q3 — Default rate by decile |
-| `plots/age_region_heatmap.png` | Q3 — Age × region interaction |
-| `plots/credit_bureau_vs_loan_type.png` | Q4 — Credit bureau leakage proof |
-| `plots/age_gender_default.png` | Q5 — Age × gender default rates |
-| `plots/cluster_profiles.png` | K-Means cluster default rates |
-| `plots/roc_curves.png` | ROC + PR curves — all regression models |
-| `plots/confusion_matrices_part5.png` | Confusion matrices — Part 5 |
-| `plots/feature_importance.png` | Feature importance — all Part 5 models |
-| `plots/feature_engineering_impact.png` | Before/after engineering comparison |
-| `plots/three_models_evaluation.png` | Classification model comparison |
-| `plots/confusion_matrices_part8.png` | Confusion matrices — Part 8 |
-| `plots/threshold_analysis.png` | Threshold analysis — XGBoost |
+
 
 ---
 
