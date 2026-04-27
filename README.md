@@ -678,10 +678,10 @@ n_iter=20, cv=3, scoring=f1_macro, random_state=42
 
 | Model | Macro F1 | Accuracy | ROC-AUC |
 |---|---|---|---|
-| XGBoost (default params) | — | — | — |
-| **XGBoost (tuned)** | **—** | **—** | **—** |
+| XGBoost (default params) | 0.9463 | 0.9507 | 0.9953 |
+| **XGBoost (tuned)** | **0.9662** | **0.9696** | **0.9982** |
 
-*(Values populated after tuning run)*
+
 
 ### 8.4 Evaluation Results
 
