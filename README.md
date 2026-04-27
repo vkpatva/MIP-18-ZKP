@@ -36,7 +36,6 @@ pipeline_tag: tabular-classification
 
 <video src="https://huggingface.co/Uris001/loan-default-risk-predictor/resolve/main/presentation.mp4" controls="controls" style="max-width: 720px;"></video>
 
-> 📺 **Video link:** *(add your video link here after recording)*
 
 ---
 
