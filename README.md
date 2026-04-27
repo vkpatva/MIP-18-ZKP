@@ -773,8 +773,8 @@ auditable feature importance rankings.
 | Best Regression Model — Gradient Boosting | FPR | 2.6% |
 | Regression → Classification spread | Class 0 vs Class 2 DR | 9.4% vs 61.8% (+52.4pp) |
 | K-Means cluster spread | Low vs High DR | 13.8% vs 31.8% (+18pp) |
-| XGBoost Classification | Macro F1 | TBD |
-| XGBoost Classification | ROC-AUC | TBD |
+| XGBoost Classification | Macro F1 | 0.9662 |
+| XGBoost Classification | ROC-AUC | 0.9982 |
 
 ### Criteria Self-Assessment
 
