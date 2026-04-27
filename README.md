@@ -42,7 +42,7 @@ pipeline_tag: tabular-classification
 ## 📌 Project Overview
 
 This project builds a full end-to-end machine learning pipeline to predict loan default risk
-using a real-world mortgage dataset of approximately 147,000 loans. The pipeline progresses
+using a real-world mortgage dataset of approximately 148,000 loans. The pipeline progresses
 from raw data through exploratory analysis, feature engineering, unsupervised clustering,
 regression modeling, and multi-class classification — ending with two production-ready models
 exported for deployment.
@@ -62,7 +62,7 @@ data leakage and is grounded in real financial logic.
 ## 🗺️ Full Project Workflow
 
 ```
-Raw Dataset (148,670 rows × 28 features)
+Raw Dataset (148,670 rows × 34 features)
     ↓
 Part 2: EDA
   ├── Column cleanup and renaming
@@ -131,8 +131,8 @@ Record presentation → Add link to README
 | Property | Value |
 |---|---|
 | Source | Kaggle — Loan Default Dataset |
-| Raw size | 148,670 rows × 28 features |
-| After cleaning | 146,829 rows × 27 features |
+| Raw size | 148,670 rows × 34 features |
+| After cleaning | 146,829 rows × 28 features |
 | Target | `Status` — binary (0 = Repaid, 1 = Defaulted) |
 | Class distribution | 75.66% repaid / 24.34% defaulted |
 | Geography | US mortgage market |
