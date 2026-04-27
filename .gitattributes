@@ -58,3 +58,4 @@ Uri_Sivan_Assignment_2_Classification,_Regression,_Clustering,_Evaluation-2.ipyn
 feature_imprtance_part_5.png filter=lfs diff=lfs merge=lfs -text
 plots/feature_importance_part_8.png filter=lfs diff=lfs merge=lfs -text
 plots/threshold_analysis.png filter=lfs diff=lfs merge=lfs -text
+plots/baseline_linear.png filter=lfs diff=lfs merge=lfs -text
