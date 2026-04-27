@@ -408,6 +408,7 @@ engineering. This baseline is the benchmark every subsequent model must beat.
 - **`StandardScaler` fit on train only**: zero test set leakage
 - **`LinearRegression()` with default parameters**: no regularization, no tuning — the
   simplest possible model to establish the floor
+![Baseline Linear Regression](plots/baseline_linear.png)
 
 **Results:**
 
