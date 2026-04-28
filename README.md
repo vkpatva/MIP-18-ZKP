@@ -125,7 +125,7 @@ Record presentation → Add link to README
 
 ## 📓 View the Notebook
 
-[![Open Notebook](https://img.shields.io/badge/📓_Notebook-View_on_HuggingFace-blue)](https://huggingface.co/Uris001/loan-default-risk-predictor/blob/main/Uri_Sivan_Assignment_2_Classification,_Regression,_Clustering,_Evaluation-2.ipy)
+[![Open Notebook](https://img.shields.io/badge/📓_Notebook-View_on_HuggingFace-blue)](https://huggingface.co/Uris001/loan-default-risk-predictor/blob/main/Uri_Sivan_Assignment_2_Classification,_Regression,_Clustering,_Evaluation-2.ipynb)
 
 
 ---
