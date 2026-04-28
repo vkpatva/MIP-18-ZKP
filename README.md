@@ -138,6 +138,81 @@ Record presentation → Add link to README
 | Geography | US mortgage market |
 | Time period | 2019 |
 
+## 📋 Raw Feature Dictionary — All 34 Original Columns
+
+The raw dataset contains 34 columns (including the target). Below is every column,
+its original name, renamed version, type, description, and modeling decision.
+
+### Identifiers — Always Excluded
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `ID` | `loan_id` | int64 | Unique loan identifier | ❌ no predictive value |
+| `year` | `year` | int64 | Single value: 2019 | ❌ zero variance |
+
+### Target Variable
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `Status` | `status` | int64 | 0 = Repaid, 1 = Defaulted | ✅ target variable |
+
+### Loan Characteristics
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `loan_amount` | `loan_amount` | int64 | Total loan disbursed in USD — right-skewed (skew 1.8) | ✅ log-transformed |
+| `loan_type` | `loan_type` | object | Type 1 / Type 2 / Type 3 — mortgage product category | ✅ one-hot encoded |
+| `loan_purpose` | `loan_purpose` | object | p1 / p2 / p3 / p4 — undocumented codes, 134 nulls | ❌ no codebook available |
+| `loan_limit` | `loan_limit` | object | Conforming / Non-conforming — 3,344 nulls | ✅ mode imputed, one-hot encoded |
+| `term` | `term_months` | float64 | Loan duration in months — 41 nulls | ✅ rows dropped, bucketed into 30yr/15yr/20yr/25yr/other |
+| `Neg_ammortization` | `negative_amortization` | object | Yes/No — balance can grow over time — 121 nulls | ✅ rows dropped, binary encoded |
+| `interest_only` | `interest_only_flag` | object | Yes/No — interest-only payment period | ✅ binary encoded |
+| `lump_sum_payment` | `lump_sum_payment_flag` | object | Yes/No — large irregular payment option | ✅ binary encoded |
+| `business_or_commercial` | `business_or_commercial` | object | Yes/No — loan for business purpose | ✅ binary encoded |
+
+### Loan Pricing — Excluded (Leakage)
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `rate_of_interest` | `interest_rate` | float64 | Loan interest rate % — set by lender post-approval — 36,439 nulls | ❌ post-origination leakage |
+| `Interest_rate_spread` | `interest_rate_spread` | float64 | Rate minus benchmark — mechanically derived from rate_of_interest — 36,639 nulls | ❌ inherits leakage from parent column |
+| `Upfront_charges` | `upfront_charges` | float64 | Origination fee at closing in USD — 39,642 nulls | ❌ data artifact — no-fee segment has exactly 0.0% default rate |
+
+### Property Characteristics
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `property_value` | `property_value` | float64 | Appraised value of collateral property in USD — 15,098 nulls, skew 4.6 | ✅ back-derived with LTV, log-transformed |
+| `LTV` | `loan_to_value_ratio` | float64 | Loan amount ÷ property value × 100 — 15,098 nulls | ✅ back-derived from loan decile medians |
+| `construction_type` | `construction_type` | object | 100% single value (`sb` = site-built) | ❌ zero variance |
+| `occupancy_type` | `occupancy_type` | object | Primary residence / Investment / Secondary home | ✅ one-hot encoded |
+| `Secured_by` | `secured_by` | object | 99.9% single value (`home`) | ❌ zero variance |
+| `Security_Type` | `security_type` | object | 99.9% single value (`direct`) | ❌ zero variance |
+| `total_units` | `total_units` | object | 1U / 2U / 3U / 4U — number of units in property | ✅ one-hot encoded |
+
+### Borrower Characteristics
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `income` | `income` | float64 | Monthly gross income in USD — 9,150 nulls, skew 18.0 | ✅ 2D binning imputation, log-transformed |
+| `dtir1` | `debt_to_income_ratio` | float64 | Total monthly debt ÷ gross monthly income — 24,121 nulls | ✅ 2D binning imputation |
+| `Credit_Score` | `credit_score` | int64 | Credit score 500–900 | ❌ Pearson r = 0.003 with target — near-uniform distribution |
+| `age` | `age_group` | object | <25 / 25-34 / 35-44 / 45-54 / 55-64 / 65-74 / >74 — 200 nulls | ✅ rows dropped, one-hot encoded |
+| `Gender` | `gender` | object | Male / Female / Joint / Sex Not Available | ✅ one-hot encoded |
+| `credit_type` | `credit_bureau` | object | CIB / CRIF / EQUI / EXP — bureau used for primary credit check | ❌ Cramér's V = 0.5929 — EQUI category has 100% default rate across all loan types — confirmed post-default label assignment |
+| `co-applicant_credit_type` | `coapplicant_credit_bureau` | object | Bureau used for co-applicant credit check | ❌ same leakage mechanism as credit_bureau |
+| `Credit_Worthiness` | `credit_worthiness` | object | l1 / l2 — lender's internal risk classification | ❌ set after underwriting is complete — leakage |
+| `open_credit` | `open_credit_flag` | object | Yes/No — open credit line exists | ❌ Cramér's V = 0.0096 — below noise threshold |
+
+### Process and Geography
+
+| Original Name | Renamed | Type | Description | Decision |
+|---|---|---|---|---|
+| `approv_in_adv` | `approved_in_advance` | object | Yes/No — pre-approval before property selection — 908 nulls | ✅ rows dropped, binary encoded |
+| `submission_of_application` | `submission_channel` | object | Retail / Broker / Direct — 200 nulls | ✅ rows dropped, one-hot encoded |
+| `Region` | `region` | object | North / North-East / Central / South | ✅ one-hot encoded |
+
+
 ---
 
 ## 🔍 Part 2: Exploratory Data Analysis
