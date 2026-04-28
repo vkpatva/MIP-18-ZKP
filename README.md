@@ -123,6 +123,10 @@ Record presentation → Add link to README
 | `best_regression_model.pkl` | Winning regression model (Gradient Boosting) |
 | `README.md` | This file |
 
+## 📓 View the Notebook
+
+[![Open Notebook](https://img.shields.io/badge/📓_Notebook-View_on_HuggingFace-blue)](https://huggingface.co/Uris001/loan-default-risk-predictor/blob/main/Uri_Sivan_Assignment_2.ipynb)
+
 
 ---
 
