@@ -861,6 +861,10 @@ auditable feature importance rankings.
 | K-Means cluster spread | Low vs High DR | 13.8% vs 31.8% (+18pp) |
 | XGBoost Classification | Macro F1 | 0.9662 |
 | XGBoost Classification | ROC-AUC | 0.9982 |
+| XGBoost — Low Risk tier | True default rate | 8.7% |
+| XGBoost — Medium Risk tier | True default rate | 26.4% |
+| XGBoost — High Risk tier | True default rate | 61.7% |
+| XGBoost — Tier spread | Low vs High | 52.8pp |
 
 ### Criteria Self-Assessment
 
