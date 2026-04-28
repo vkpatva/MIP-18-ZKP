@@ -740,22 +740,33 @@ False Negatives cost 5–10× more than False Positives in lending operations.
 | XGBoost (tuned) | Sequential gradient boosted trees | RandomizedSearchCV, 20 iter, 3-fold CV |
 | K-Nearest Neighbors | Distance-based instance learner | K=15, distance weights, Euclidean |
 
+
 ### 8.3 Hyperparameter Tuning — XGBoost
-
-RandomizedSearchCV was applied to XGBoost with Macro F1 as the scoring criterion:
-
-```
-Search space: n_estimators [200,300,400] × max_depth [3,4,5,6] ×
-              learning_rate [0.01,0.05,0.1] × subsample [0.7,0.8,0.9] ×
-              colsample_bytree [0.7,0.8,0.9] × min_child_weight [1,3,5]
-n_iter=20, cv=3, scoring=f1_macro, random_state=42
-```
 
 | Model | Macro F1 | Accuracy | ROC-AUC |
 |---|---|---|---|
-| XGBoost (default params) | 0.9463 | 0.9507 | 0.9953 |
+| XGBoost (default) | 0.9463 | 0.9507 | 0.9953 |
 | **XGBoost (tuned)** | **0.9662** | **0.9696** | **0.9982** |
 
+**Note on metrics:** The classification labels were derived from the regression
+model's predicted scores on the same feature matrix. The classifiers therefore
+learn to replicate the regression tier assignments rather than predicting raw
+defaults from scratch — which explains the near-perfect scores.
+
+The operationally correct validation is the true default rate within each
+predicted tier:
+
+| Predicted Class | N Loans | True Default Rate |
+|---|---|---|
+| Low Risk | 15,788 | 8.7% |
+| Medium Risk | 7,361 | 26.4% |
+| High Risk | 6,217 | **61.7%** |
+
+**52.8 percentage point spread** confirms the tiers are financially meaningful.
+Loans flagged as High Risk default at 61.7% — 2.5× the portfolio average of
+24.3%. Loans flagged as Low Risk default at only 8.7% — safe for streamlined
+approval. This is the metric that determines whether the model is deployable.
+**It is.**
 
 
 ### 8.4 Evaluation Results
