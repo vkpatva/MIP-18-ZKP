@@ -603,7 +603,7 @@ which only happens with genuinely better discrimination.
 
 ### Feature Importance — Part 5
 
-![Feature Importance Part 5](plots/feature_imprtance_part_5.png)
+![Feature Importance Part 5](plots/feature_importance_part_5.png)
 
 **Key findings:**
 - `is_compound_risk` is the dominant feature in Ridge Regression (+0.44 coefficient)
