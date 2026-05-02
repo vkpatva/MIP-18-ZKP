@@ -643,7 +643,7 @@ automatically. Trees are scale-invariant — no standardization artifacts.
 ---
 
 ## 🏷️ Part 7: Regression → Classification
-
+![Regression to Classification](plots/regression_classification.png)
 | Class | Label | Threshold | N (Train) | Train % | True Default Rate |
 |---|---|---|---|---|---|
 | 0 | Low Risk | score < 0.20 | 65,268 | 55.6% | **9.4%** |
