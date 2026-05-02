@@ -61,3 +61,5 @@ plots/threshold_analysis.png filter=lfs diff=lfs merge=lfs -text
 plots/baseline_linear.png filter=lfs diff=lfs merge=lfs -text
 video_a_2.mp4 filter=lfs diff=lfs merge=lfs -text
 presentation.mp4 filter=lfs diff=lfs merge=lfs -text
+plots/feature_importance_part_5.png filter=lfs diff=lfs merge=lfs -text
+plots/regression_classification.png filter=lfs diff=lfs merge=lfs -text
