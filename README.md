@@ -61,7 +61,7 @@ data leakage and is grounded in real financial logic.
 ## 🗺️ Full Project Workflow
 
 ```
-Raw Dataset (148,670 rows × 34 features)
+Raw Dataset (148,670 rows × 28 features)
     ↓
 Part 2: EDA
   ├── Column cleanup and renaming
@@ -76,8 +76,8 @@ Part 2: EDA
   └── 5 bivariate research questions with dedicated visualizations
     ↓
 Part 3: Baseline Linear Regression
-  ├── 34 model features (post one-hot encoding), default parameters
-  ├── 80/20 stratified split (SEED=42), StandardScaler on train only
+  ├── 34 model features (after one-hot encoding of 27 cleaned columns)
+  ├── 80/20 stratified split (SEED=42)
   ├── MAE=0.3227, RMSE=0.3944, R²=0.1555, AUC=0.693
   └── Feature importance via coefficients
     ↓
@@ -89,9 +89,9 @@ Part 4: Feature Engineering
   └── Final: 54-feature matrix, zero leakage
     ↓
 Part 5: Three Improved Regression Models
-  ├── Linear Regression (engineered) — R²=0.254, AUC=0.809
-  ├── Ridge Regression (L2 regularized) — R²=0.254, AUC=0.809
-  ├── Gradient Boosting Regressor — R²=0.497, AUC=0.881 ← WINNER
+  ├── Linear Regression (engineered) — AUC 0.809 (+16.7% over baseline)
+  ├── Logistic Regression — AUC 0.812
+  ├── Gradient Boosting — AUC 0.882 ← WINNER
   ├── ROC + Precision-Recall curves, confusion matrices, feature importance
   └── best_regression_model.pkl → HuggingFace
     ↓
@@ -119,13 +119,24 @@ Record presentation → Add link to README
 |---|---|
 | `Uri_Sivan_Assignment_2.ipynb` | Full notebook — all parts with outputs |
 | `best_model_xgboost.pkl` | Winning classification model (XGBoost tuned) |
-| `best_regression_model.pkl` | Winning regression model (Gradient Boosting Regressor) |
+| `best_regression_model.pkl` | Winning regression model (Gradient Boosting) |
 | `README.md` | This file |
-| `plots/` | All visualization PNG files |
-
-## 📓 View the Notebook
-
-[![Open Notebook](https://img.shields.io/badge/📓_Notebook-View_on_HuggingFace-blue)](https://huggingface.co/Uris001/loan-default-risk-predictor/blob/main/Uri_Sivan_Assignment_2_Classification,_Regression,_Clustering,_Evaluation-2.ipynb)
+| `plots/cleaning_summary.png` | Data cleaning waterfall chart |
+| `plots/ltv_dti_heatmap.png` | Q1 — LTV × DTI compound risk |
+| `plots/income_loan_scatter.png` | Q2 — Income vs loan amount scatter |
+| `plots/default_by_decile.png` | Q2 — Default rate by decile |
+| `plots/age_region_heatmap.png` | Q3 — Age × region interaction |
+| `plots/credit_bureau_vs_loan_type.png` | Q4 — Credit bureau leakage proof |
+| `plots/age_gender_default.png` | Q5 — Age × gender default rates |
+| `plots/cluster_profiles.png` | K-Means cluster default rates |
+| `plots/roc_curves.png` | ROC + PR curves — all regression models |
+| `plots/confusion_matrices_part5.png` | Confusion matrices — Part 5 |
+| `plots/feature_imprtance_part_5.png` | Feature importance — Part 5 models |
+| `plots/feature_engineering_impact.png` | Before/after engineering comparison |
+| `plots/three_models_evaluation.png` | Classification model comparison |
+| `plots/confusion_matrices_part8.png` | Confusion matrices — Part 8 |
+| `plots/feature_importance_part_8.png` | Feature importance — Part 8 models |
+| `plots/threshold_analysis.png` | Threshold analysis — XGBoost |
 
 ---
 
@@ -134,7 +145,7 @@ Record presentation → Add link to README
 | Property | Value |
 |---|---|
 | Source | Kaggle — Loan Default Dataset |
-| Raw size | 148,670 rows × 34 features |
+| Raw size | 148,670 rows × 28 features |
 | After cleaning | 146,829 rows × 27 features |
 | Baseline model input | 34 features (post one-hot encoding) |
 | Engineered model input | 54 features |
@@ -145,86 +156,80 @@ Record presentation → Add link to README
 
 ---
 
-## 📋 Raw Feature Dictionary — All 34 Original Columns
+## 📋 Raw Feature Dictionary — All 28 Original Columns
 
-### Identifiers — Always Excluded
-
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `ID` | `loan_id` | int64 | Unique loan identifier | ❌ no predictive value |
-| `year` | `year` | int64 | Single value: 2019 | ❌ zero variance |
-
-### Target Variable
-
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `Status` | `status` | int64 | 0 = Repaid, 1 = Defaulted | ✅ target variable |
+The raw dataset contains 28 columns across four categories.
+Eight were excluded before modeling (see Section 2.4 for justification).
 
 ### Loan Characteristics
 
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `loan_amount` | `loan_amount` | int64 | Total loan disbursed in USD — skew 1.8 | ✅ log-transformed |
-| `loan_type` | `loan_type` | object | Type 1 / Type 2 / Type 3 — mortgage product category | ✅ one-hot encoded |
-| `loan_purpose` | `loan_purpose` | object | p1–p4 — undocumented codes | ❌ no codebook |
-| `loan_limit` | `loan_limit` | object | Conforming / Non-conforming — 3,344 nulls | ✅ mode imputed |
-| `term` | `term_months` | float64 | Loan duration in months — 41 nulls | ✅ bucketed into product categories |
-| `Neg_ammortization` | `negative_amortization` | object | Yes/No — balance can grow over time | ✅ binary encoded |
-| `interest_only` | `interest_only_flag` | object | Yes/No — interest-only payment period | ✅ binary encoded |
-| `lump_sum_payment` | `lump_sum_payment_flag` | object | Yes/No — large irregular payment option | ✅ binary encoded |
-| `business_or_commercial` | `business_or_commercial` | object | Yes/No — loan for business purpose | ✅ binary encoded |
-
-### Loan Pricing — Excluded (Leakage or Artifact)
-
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `rate_of_interest` | `interest_rate` | float64 | Set by lender post-approval — 36,439 nulls | ❌ post-origination leakage |
-| `Interest_rate_spread` | `interest_rate_spread` | float64 | Derived from interest_rate — 36,639 nulls | ❌ inherits leakage |
-| `Upfront_charges` | `upfront_charges` | float64 | Origination fee — 39,642 nulls | ❌ data artifact: 0% default in no-fee segment |
+| Feature | Type | Description | Kept |
+|---|---|---|---|
+| `loan_amount` | Numeric | Total loan disbursed in USD | ✅ (log-transformed) |
+| `loan_to_value_ratio` | Numeric | Loan amount ÷ property value × 100 | ✅ |
+| `term_months` | Numeric | Loan duration in months (360=30yr, 180=15yr, etc.) | ✅ (bucketed) |
+| `loan_type` | Categorical | Type 1 / Type 2 / Type 3 — mortgage product category | ✅ |
+| `loan_limit` | Categorical | Conforming / Non-conforming (agency limit compliance) | ✅ |
+| `loan_purpose` | Categorical | p1 / p2 / p3 / p4 — undocumented codes | ❌ (no codebook) |
+| `negative_amortization` | Binary | Yes/No — balance can grow over time | ✅ |
+| `interest_only_flag` | Binary | Yes/No — interest-only payment period | ✅ |
+| `lump_sum_payment_flag` | Binary | Yes/No — large irregular payment option | ✅ |
+| `business_or_commercial` | Binary | Yes/No — loan for business purpose | ✅ |
 
 ### Property Characteristics
 
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `property_value` | `property_value` | float64 | Appraised value in USD — 15,098 nulls, skew 4.6 | ✅ back-derived, log-transformed |
-| `LTV` | `loan_to_value_ratio` | float64 | Loan ÷ property value × 100 — 15,098 nulls | ✅ back-derived |
-| `construction_type` | `construction_type` | object | 100% single value (`sb`) | ❌ zero variance |
-| `occupancy_type` | `occupancy_type` | object | Primary / Investment / Secondary | ✅ one-hot encoded |
-| `Secured_by` | `secured_by` | object | 99.9% single value (`home`) | ❌ zero variance |
-| `Security_Type` | `security_type` | object | 99.9% single value (`direct`) | ❌ zero variance |
-| `total_units` | `total_units` | object | 1U / 2U / 3U / 4U | ✅ one-hot encoded |
+| Feature | Type | Description | Kept |
+|---|---|---|---|
+| `property_value` | Numeric | Appraised value of collateral property in USD | ✅ (log-transformed) |
+| `occupancy_type` | Categorical | Primary residence / Investment / Secondary home | ✅ |
+| `total_units` | Categorical | 1U / 2U / 3U / 4U — number of units in property | ✅ |
+| `construction_type` | Categorical | `sb` (site-built) — 100% single value | ❌ (zero variance) |
+| `secured_by` | Categorical | `home` — 99.9% single value | ❌ (zero variance) |
+| `security_type` | Categorical | `direct` — 99.9% single value | ❌ (zero variance) |
 
 ### Borrower Characteristics
 
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `income` | `income` | float64 | Monthly gross income USD — 9,150 nulls, skew 18.0 | ✅ 2D binning, log-transformed |
-| `dtir1` | `debt_to_income_ratio` | float64 | Monthly debt ÷ gross income — 24,121 nulls | ✅ 2D binning |
-| `Credit_Score` | `credit_score` | int64 | Credit score 500–900 | ❌ Pearson r = 0.003 with target |
-| `age` | `age_group` | object | Age bands — 200 nulls | ✅ rows dropped, one-hot encoded |
-| `Gender` | `gender` | object | Male / Female / Joint / Sex Not Available | ✅ one-hot encoded |
-| `credit_type` | `credit_bureau` | object | CIB / CRIF / EQUI / EXP | ❌ EQUI = 100% default — confirmed leakage |
-| `co-applicant_credit_type` | `coapplicant_credit_bureau` | object | Bureau for co-applicant | ❌ same leakage mechanism |
-| `Credit_Worthiness` | `credit_worthiness` | object | l1 / l2 — lender's internal tier | ❌ set post-underwriting — leakage |
-| `open_credit` | `open_credit_flag` | object | Yes/No — open credit line | ❌ Cramér's V = 0.0096 |
+| Feature | Type | Description | Kept |
+|---|---|---|---|
+| `income` | Numeric | Monthly gross income of primary applicant in USD | ✅ (log-transformed) |
+| `debt_to_income_ratio` | Numeric | Total monthly debt payments ÷ gross monthly income | ✅ |
+| `credit_score` | Numeric | Credit score 500–900 — creditworthiness measure | ❌ (r=0.003 with target) |
+| `age_group` | Categorical | <25 / 25-34 / 35-44 / 45-54 / 55-64 / 65-74 / >74 | ✅ |
+| `gender` | Categorical | Male / Female / Joint / Sex Not Available | ✅ |
+| `credit_bureau` | Categorical | CIB / CRIF / EQUI / EXP — bureau used for credit check | ❌ (leakage — EQUI=100% default) |
+| `coapplicant_credit_bureau` | Categorical | Same as credit_bureau for co-applicant | ❌ (same leakage) |
+| `credit_worthiness` | Categorical | l1 / l2 — lender's internal risk classification | ❌ (leakage — set post-underwriting) |
 
-### Process and Geography
+### Loan Pricing and Process
 
-| Original Name | Renamed | Type | Description | Decision |
-|---|---|---|---|---|
-| `approv_in_adv` | `approved_in_advance` | object | Pre-approval flag — 908 nulls | ✅ rows dropped |
-| `submission_of_application` | `submission_channel` | object | Retail / Broker / Direct — 200 nulls | ✅ rows dropped |
-| `Region` | `region` | object | North / North-East / Central / South | ✅ one-hot encoded |
+| Feature | Type | Description | Kept |
+|---|---|---|---|
+| `interest_rate` | Numeric | Loan interest rate in % — set by lender post-approval | ❌ (leakage) |
+| `interest_rate_spread` | Numeric | Rate minus benchmark rate — derived from interest_rate | ❌ (inherits leakage) |
+| `upfront_charges` | Numeric | Origination fee charged at closing in USD | ❌ (data artifact — 0% default in no-fee segment) |
+| `approved_in_advance` | Binary | Yes/No — pre-approval before property selection | ✅ |
+| `submission_channel` | Categorical | Retail / Broker / Direct — how application was submitted | ✅ |
+| `region` | Categorical | North / North-East / Central / South | ✅ |
+| `open_credit_flag` | Binary | Yes/No — open credit line exists | ❌ (Cramér's V < 0.01) |
 
-### Feature Count at Each Stage
+### Identifiers (always excluded)
 
-| Stage | Count | Notes |
+| Feature | Type | Description |
 |---|---|---|
-| Raw dataset | 34 | All columns including target and IDs |
-| After dropping IDs + zero-variance + loan_purpose | 21 | |
-| After excluding leakage + no-signal columns | 13 raw columns | |
-| After one-hot encoding — baseline (Part 3) | **34 model features** | |
-| After feature engineering — final (Part 4) | **54 model features** | |
+| `loan_id` | ID | Unique loan identifier — no predictive value |
+| `year` | Numeric | Single value (2019) — zero variance |
+
+---
+
+### Feature Count Summary
+
+| Stage | Features | Notes |
+|---|---|---|
+| Raw dataset | 28 | All original columns including IDs |
+| After dropping IDs + zero-variance | 21 | loan_id, year, construction_type, secured_by, security_type, loan_purpose removed |
+| After excluding leakage + no-signal | 13 raw columns | credit_score, interest_rate, interest_rate_spread, credit_worthiness, credit_bureau, coapplicant_credit_bureau, upfront_charges, open_credit_flag removed |
+| After one-hot encoding (baseline) | **34 model features** | Categorical expansion for Part 3 |
+| After feature engineering | **54 model features** | 10 new features + PCA + cluster features |
 
 ---
 
@@ -232,68 +237,80 @@ Record presentation → Add link to README
 
 ### 2.1 Initial Column Audit and Cleanup
 
-- **Renamed** all columns to readable `snake_case`
-- **Dropped 5 zero-variance / identifier columns**: `loan_id`, `year`, `construction_type`, `secured_by`, `security_type`
-- **Dropped `loan_purpose`** — codes p1–p4 with no codebook
-- **Relabeled** all categorical codes to readable strings
+Before any analysis, every column was audited for informativeness:
+
+- **Renamed** all 28 columns to readable `snake_case` names
+- **Dropped 5 zero-variance / identifier columns** — these carry zero predictive value:
+  `loan_id` (unique ID), `year` (single value: 2019), `construction_type` (99.9% `sb`),
+  `secured_by` (99.9% `home`), `security_type` (99.9% `direct`)
+- **Dropped `loan_purpose`** — codes p1–p4 with no codebook available. Including
+  undocumented codes as features would embed unknown biases into the model.
+- **Relabeled** all categorical codes to readable strings (`cf` → `conforming`,
+  `pr` → `primary_residence`, `pre` → `yes`, etc.)
 
 ---
 
 ### 2.2 Missingness Analysis — Co-occurrence Heatmap First
 
-**Before imputing a single value**, a missingness co-occurrence heatmap was computed.
-This revealed `interest_rate`, `interest_rate_spread`, `upfront_charges`, and
-`debt_to_income_ratio` are missing on the **same rows** — structural, not random missingness.
+**Before imputing a single value**, a missingness co-occurrence heatmap was computed
+across all columns. This revealed that `interest_rate`, `interest_rate_spread`,
+`upfront_charges`, and `debt_to_income_ratio` are missing on the **same rows** —
+corresponding to applications that did not reach final funding. This is structural
+missingness, not random. Understanding this pattern drove the imputation strategy.
 
 | Column | Missing N | % | Strategy | Justification |
 |---|---|---|---|---|
 | `term_months` | 41 | 0.03% | Drop rows | Random clerical gaps |
 | `negative_amortization` | 121 | 0.08% | Drop rows | Independent missingness |
-| `age_group` + `submission_channel` | 200 | 0.13% | Drop rows | Co-occurring |
+| `age_group` + `submission_channel` | 200 | 0.13% | Drop rows | Co-occurring on same 200 rows |
 | `approved_in_advance` | 908 | 0.61% | Drop rows | Independent missingness |
-| `loan_limit` | 3,344 | 2.25% | Mode imputation | 91% conforming |
-| `income` | 10,410 | 7.0% | 2D binning: loan decile × credit band | Preserves income-leverage relationship |
-| `property_value` + `LTV` | 15,131 | 10.2% | Back-derivation from median LTV | Mechanical consistency |
-| `debt_to_income_ratio` | 24,121 | 16.2% | 2D binning: credit band × income decile | No leakage |
-| `interest_rate` | 36,439 | 24.5% | 2D binning: credit band × LTV band | Structural missingness |
+| `loan_limit` | 3,344 | 2.25% | Mode imputation | 91% conforming — safe to fill |
+| `income` | 10,410 | 7.0% | **2D binning**: loan decile × credit score band | Preserves income-leverage relationship |
+| `property_value` + `LTV` | 15,131 | 10.2% | **Back-derivation** from median LTV by loan decile | Keeps both columns mechanically consistent |
+| `debt_to_income_ratio` | 24,121 | 16.2% | **2D binning**: credit band × income decile | Uses strongest predictors, no leakage |
+| `interest_rate` | 36,439 | 24.5% | **2D binning**: credit band × LTV band | Structural missingness on non-funded applications |
 
 ---
 
 ### 2.3 Invalid Values and Outlier Treatment
 
-**Invalid values → NaN:**
+**Invalid values converted to NaN (then imputed):**
 - `income == 0` — mechanically impossible for a funded mortgage
-- `loan_to_value_ratio > 150` — division artifact
+- `loan_to_value_ratio > 150` — division artifact, not a real loan
 - `interest_rate == 0` — unfunded applications
 
-**Rows dropped:** `income < $1,000` (538 rows), `LTV > 150` (33 rows)
+**Rows dropped:**
+- `income < $1,000/month` — 538 rows. Below $1,000 cannot sustain any mortgage payment.
+- `LTV > 150` — 33 rows after NaN conversion.
 
-**Outlier treatment — IQR analysis:**
+**Outlier detection — IQR analysis on all numeric columns:**
 
 | Column | Skewness (raw) | Treatment | Skewness (after) |
 |---|---|---|---|
-| `loan_amount` | 1.8 | `log1p` | 0.12 |
-| `property_value` | 4.6 | `log1p` | −0.04 |
-| `income` | 18.0 | `log1p` | 0.16 |
-| `upfront_charges` | 2.1 | `log1p` | 0.09 |
-| `term_months` | — | Bucketed: 30yr/15yr/20yr/25yr/other | — |
+| `loan_amount` | 1.8 | `log1p` transform | 0.12 |
+| `property_value` | 4.6 | `log1p` transform | −0.04 |
+| `income` | 18.0 | `log1p` transform | 0.16 |
+| `upfront_charges` | 2.1 | `log1p` transform | 0.09 |
+| `term_months` | — | Bucketed: 30yr (82%), 15yr (9%), 20yr (4%), 25yr (2%), other (4%) | — |
 | `loan_to_value_ratio` | 0.3 | Retained — near-normal | — |
 | `debt_to_income_ratio` | 0.8 | Retained — acceptable | — |
 
+Log transforms reduced skewness by 90%+ across all four monetary columns.
+
 ---
 
-### 2.4 Feature Exclusions — Eight Columns With Evidence
+### 2.4 Feature Exclusions — Eight Columns Removed With Evidence
 
 | Feature | Evidence | Reason |
 |---|---|---|
-| `credit_score` | Pearson r = 0.003; near-uniform distribution | Pre-publication filtering |
-| `interest_rate` | Set post-approval | Post-origination leakage |
-| `interest_rate_spread` | Derived from `interest_rate` | Inherits leakage |
-| `credit_worthiness` | Set after underwriting | Leakage |
-| `credit_bureau` | Cramér's V = 0.5929; EQUI = 100% default across all loan types | Post-default label assignment |
-| `coapplicant_credit_bureau` | Same as `credit_bureau` | Same leakage |
-| `upfront_charges` | No-fee segment: exactly 0.0% default (N=20,582) | Data artifact |
-| `open_credit_flag` | Cramér's V = 0.0096 | No signal |
+| `credit_score` | Pearson r = 0.003; near-uniform 500–900 distribution | Pre-publication filtering removed the predictive range |
+| `interest_rate` | Set by lender post-approval | Post-origination leakage — encodes the outcome |
+| `interest_rate_spread` | Mechanically derived from `interest_rate` | Inherits leakage from parent column |
+| `credit_worthiness` | Lender's internal risk tier (l1/l2) | Set after underwriting — leakage |
+| `credit_bureau` | Cramér's V = 0.5929; EQUI = 100% default across ALL loan types | Q4 proves this is post-default label assignment |
+| `coapplicant_credit_bureau` | Same mechanism as `credit_bureau` | Same leakage concern |
+| `upfront_charges` | No-fee segment: exactly 0.0% default (N=20,582) | Structurally impossible — data artifact |
+| `open_credit_flag` | Cramér's V = 0.0096 | Below noise threshold |
 
 ---
 
@@ -309,35 +326,41 @@ This revealed `interest_rate`, `interest_rate_spread`, `upfront_charges`, and
 | Drop negative_amortization nulls | 148,508 | −121 |
 | Drop age_group / submission nulls | 148,308 | −200 |
 | Drop approved_in_advance nulls | 147,400 | −908 |
-| Impute loan_limit | 147,400 | 0 rows |
-| Impute income | 147,400 | 0 rows |
+| Impute loan_limit (mode) | 147,400 | 0 rows |
+| Impute income (2D binning) | 147,400 | 0 rows |
 | Drop income < $1,000 | 146,862 | −538 |
-| Impute property_value / LTV | 146,862 | 0 rows |
+| Impute property_value / LTV (back-derive) | 146,862 | 0 rows |
 | Drop LTV > 150 | 146,829 | −33 |
-| Impute DTI + interest_rate | 146,829 | 0 rows |
+| Impute DTI + interest_rate (2D binning) | 146,829 | 0 rows |
 | **Final clean dataset** | **146,829** | **−1,841 total (1.2%)** |
 
 ---
 
-### 2.6 Correlation Analysis
+### 2.6 Descriptive Statistics and Correlation Analysis
+
+Key findings from the correlation analysis:
 
 - `loan_amount_log` ↔ `property_value_log`: r = 0.85 — strongest multicollinearity pair
 - `loan_amount_log` ↔ `income_log`: r = 0.66 — second strongest
-- `income_log` ↔ `Status`: r = −0.18 — strongest protective predictor
-- `loan_to_value_ratio` ↔ `Status`: r = +0.12 — strongest risk predictor
-- `credit_score` ↔ `Status`: r = +0.003 — confirms exclusion
+- `loan_to_value_ratio` ↔ `Status`: r = +0.12 — strongest raw numeric predictor
+- `income_log` ↔ `Status`: r = −0.18 — strongest protective numeric predictor
+- `credit_score` ↔ `Status`: r = +0.003 — confirms exclusion decision
 
 ---
 
-### 2.7 Univariate Analysis
+### 2.7 Univariate Analysis — Key Findings
+
+**Numeric features — default rate by quintile:**
 
 | Feature | Bottom Quintile DR | Top Quintile DR | Direction |
 |---|---|---|---|
-| `loan_amount` | 29.8% | 22.4% | Inverse |
+| `loan_amount` | 29.8% | 22.4% | Inverse (larger = safer) |
 | `property_value` | 31.5% | 19.1% | Strong inverse |
 | `income` | 36.8% | 19.5% | Strongest inverse |
-| `loan_to_value_ratio` | 13.6% | 22.5% | Non-linear peak at 75–90% |
+| `loan_to_value_ratio` | 13.6% (<60%) | 22.5% (90%+) | Non-linear peak at 75–90% |
 | `debt_to_income_ratio` | lower | 28–43% band = peak | Non-linear |
+
+**Categorical features — Cramér's V ranking (all 17 features tested):**
 
 | Feature | Cramér's V | Status |
 |---|---|---|
@@ -346,80 +369,144 @@ This revealed `interest_rate`, `interest_rate_spread`, `upfront_charges`, and
 | `negative_amortization` | 0.1523 | Retained |
 | `coapplicant_credit_bureau` | 0.1446 | **Excluded — leakage** |
 | `submission_channel` | 0.1198 | Retained |
+| `loan_type` | 0.0885 | Retained |
 | `open_credit_flag` | 0.0096 | **Excluded — no signal** |
 
 ---
 
 ### 2.8 Five Bivariate Research Questions
 
-#### Q1 — Does leverage × debt burden create compound risk?
+---
+
+#### Q1 — Does leverage (LTV) × debt burden (DTI) create compound risk?
+
+> *"Is the combination of high LTV and high DTI more dangerous than either alone?"*
 
 ![LTV DTI Heatmap](plots/ltv_dti_heatmap.png)
 
-**Finding:** Peak default rate (68.9%) at LTV Q3 (75–90%) × DTI Q2–Q4 — not at maximums.
-Non-linear interaction invisible to additive models.
-**Implication:** Created `is_compound_risk` flag — reaches 3× dataset average.
+**Finding:**
+The peak default rate (68.9%) occurs at LTV Q3 (75–90%) × DTI Q2–Q4 — not at the maximum
+values of either variable. LTV Q5 (highest leverage) defaults less than Q3 because very high
+LTV loans required mortgage insurance and stricter underwriting that pre-screened the worst
+borrowers. The compound risk interaction is non-linear and invisible to any model that treats
+LTV and DTI as independent additive predictors.
+
+**Modeling implication:**
+Created `is_compound_risk` — a binary flag for the 75–90% LTV AND DTI mid-band zone.
+This single cell reaches 3× the dataset average default rate.
 
 ---
 
-#### Q2 — Does loan-to-income ratio outperform income or loan amount?
+#### Q2 — Does loan-to-income ratio outperform absolute income or loan amount?
+
+> *"Is affordability stress — not income or loan size — the real driver?"*
 
 ![Income VS Loan amount](plots/income_loan_scatter.png)
 ![Default Rate by Decile](plots/default_by_decile.png)
 
-**Finding:** Defaulters earn 32% less but borrow only 10% less. Risk gradient runs along
-LTI diagonal. Income: strongest monotonic gradient (36.8% → 19.5%). LTI: flat for
-deciles 0–6, spikes to 35.2% at decile 9.
-**Implication:** Engineered `lti_ratio_log` + `is_extreme_lti` flag for top decile.
+**Finding:**
+Defaulters earn ~32% less but borrow only ~10% less than repaid borrowers. The risk gradient
+runs diagonally along the loan-to-income ratio, not along either axis independently. The
+decile plot confirms: income has the strongest and most consistent monotonic gradient
+(36.8% → 19.5%), loan amount is weaker and shallower, and LTI is near-flat for deciles 0–6
+but spikes to 35.2% at decile 9 — a tail-risk feature.
+
+**Modeling implication:**
+Engineered `lti_ratio_log`. Created `is_extreme_lti` binary flag for the top LTI decile only.
+Raw LTI as continuous predictor discarded — its signal concentrates entirely in the tail.
 
 ---
 
-#### Q3 — Do age and geography create localized hotspots?
+#### Q3 — Do age and geography interact to create localized hotspots?
+
+> *"Are young or elderly borrowers in specific regions disproportionately risky?"*
 
 ![Age Region Heatmap](plots/age_region_heatmap.png)
 
-**Finding:** North-East: under-25 = 50.0% default, over-74 = 44.7% — both 2× average.
-North region consistently safest (19.7%–28.1%).
-**Implication:** Created `is_northeast_under25` and `is_northeast_over74` flags.
+**Finding:**
+North-East region contains two structural extreme cells: under-25 at 50.0% default and
+over-74 at 44.7% default — both more than double the dataset average. The North region
+is consistently the safest across all age groups (19.7%–28.1%). The individual Cramér's V
+for age (0.049) and region (0.048) are modest, but their interaction creates cells with
+2× the dataset average — signal invisible to any model using only main effects.
+
+**Modeling implication:**
+Created `is_northeast_under25` and `is_northeast_over74` binary flags.
+Used North as the reference (lowest-risk) category in one-hot encoding.
 
 ---
 
-#### Q4 — Which credit bureau × loan type combinations reveal leakage?
+#### Q4 — Which credit bureau × loan type combinations are most dangerous?
+
+> *"Do specific credit bureau and loan type combinations reveal leakage?"*
 
 ![Credit Bureau Loan Type Heatmap](plots/credit_bureau_vs_loan_type.png)
 
-**Finding:** EQUI bureau: 100.0% default across every single loan type — forensic proof
-of post-default label assignment. Explains Cramér's V = 0.5929 — it was leakage, not signal.
-**Implication:** `credit_bureau` and `coapplicant_credit_bureau` excluded from all models.
+**Finding:**
+Three bureaus (CIB, CRIF, EXP) show realistic moderate default rates (13%–26%) across all
+loan types. The EQUI bureau shows **100.0% default rate across every single loan type without
+exception**. A perfect 100% default rate uniform across all product types and borrower profiles
+cannot be a risk signal — it is forensic evidence of post-default label assignment. This
+explains the anomalous Cramér's V of 0.5929 for `credit_bureau` — it was not signal, it
+was leakage.
+
+**Modeling implication:**
+`credit_bureau` and `coapplicant_credit_bureau` excluded from all models.
+`loan_type` retained — the 12-point spread (13% vs 25%) is real product-driven variation.
 
 ---
 
-#### Q5 — Do joint applicants outperform individual borrowers at every age?
+#### Q5 — Does gender and applicant type affect default risk across the life cycle?
+
+> *"Do joint applicants systematically outperform individual borrowers at every age?"*
 
 ![Age Gender Default](plots/age_gender_default.png)
 
-**Finding:** Joint applicants lowest default at every age group (17.5%–24.4%). Male
-applicants steepest age-related increase (30.6% → 34.5%). U-shaped pattern, trough at 35–44.
-**Implication:** Created `is_joint_prime_age` flag for joint applicants aged 35–54.
+**Finding:**
+Joint applicants have the lowest default rate at every single age group (17.5%–24.4%).
+Male applicants show the steepest age-related increase (30.6% at <25 → 34.5% at >74).
+All four groups follow a U-shaped age pattern with the trough at 35–44 — peak earning years.
+The joint-male gap widens with age: ~7 points at <25 → ~10 points at >74.
+
+**Modeling implication:**
+Created `is_joint_prime_age` flag for joint applicants aged 35–54 — the safest identifiable
+demographic segment.
 
 ---
 
 ## 📉 Part 3: Baseline Linear Regression
 
-**Goal:** Establish a reproducible, leakage-free performance floor.
+**Goal:** Establish a reproducible, leakage-free performance floor before any feature
+engineering. Every subsequent model must beat this benchmark.
 
-![Baseline Linear Regression](plots/baseline_linear.png)
+**Feature count:** After cleaning and one-hot encoding, the 27 remaining raw columns
+expand to **34 model features** (categorical columns encode into multiple binary columns).
+
+**Design decisions:**
+- **34 model features**: log-transformed monetary + bounded numeric + one-hot categoricals
+- **80/20 stratified split**: preserves the 24.34% default rate in both sets
+- **`random_state=42`**: all results are fully reproducible
+- **`StandardScaler` fit on train only**: zero test set leakage
+- **`LinearRegression()` with default parameters**: no regularization, no tuning
+
+**Results:**
 
 | Metric | Train | Test | Gap |
 |---|---|---|---|
 | MAE | 0.3223 | 0.3227 | 0.0004 |
 | MSE | 0.1552 | 0.1555 | 0.0003 |
 | RMSE | 0.3939 | 0.3944 | 0.0005 |
-| R² | 0.1575 | **0.1555** | 0.0020 |
+| R² | 0.1575 | 0.1555 | 0.0020 |
 | ROC-AUC | — | 0.693 | — |
 | F1 (Default) | — | 0.244 | — |
 | Accuracy | — | 77.8% | — |
 | FNR | — | 57.1% | — |
+
+**Key observations:**
+- **No overfitting** — train/test gap < 0.002 across all metrics
+- **R² = 0.1555** — explains 15.6% of default variance. Real signal exists, 84% unexplained
+- **FNR = 57.1%** — misses more than half of actual defaults. Not deployable.
+- **Score distributions overlap heavily** — both classes peak at ~0.25
 
 **Top coefficient features:**
 
@@ -428,82 +515,104 @@ applicants steepest age-related increase (30.6% → 34.5%). U-shaped pattern, tr
 | `lump_sum_payment_flag_yes` | +0.5251 | Risk-increasing |
 | `negative_amortization_yes` | +0.1836 | Risk-increasing |
 | `term_category_25yr` | +0.1784 | Risk-increasing |
+| `loan_limit_non_conforming` | +0.1027 | Risk-increasing |
 | `occupancy_type_primary_residence` | −0.1125 | Protective |
+| `property_value_log` | −0.08 | Protective |
 | `income_log` | −0.07 | Protective |
 
 **Key finding:** Loan product type features dominate — not borrower financial metrics.
+The type of mortgage selected predicts default more strongly than income, LTV, or DTI.
+This directly shaped Part 4 feature engineering.
 
 ---
 
 ## ⚙️ Part 4: Feature Engineering
 
+Feature engineering was the single most impactful step in the entire pipeline —
+more impactful than any model choice. Every feature below is directly traceable
+to a specific EDA finding.
+
 ### 4.1 Ten New Features
 
 | Feature | Type | EDA Source | Default Rate Signal |
 |---|---|---|---|
-| `lti_ratio_log` | Continuous | Q2: risk along LTI diagonal | Tail spikes to 35.2% |
-| `loan_to_property` | Continuous | Alternative leverage measure | Complements LTV |
-| `monthly_debt_est` | Continuous | DTI × income / 100 | Absolute burden |
-| `is_extreme_lti` | Binary | Q2: top decile | 35.2% vs 23% baseline |
-| `is_compound_risk` | Binary | Q1: LTV 75–90% × DTI mid-band | Up to 68.9% default |
-| `is_25yr_term` | Binary | Term analysis | 56.4% default — 2× any other |
-| `is_northeast_under25` | Binary | Q3 | 50.0% default |
-| `is_northeast_over74` | Binary | Q3 | 44.7% default |
-| `is_joint_prime_age` | Binary | Q5 | 17.5–19.7% default |
-| `is_exotic_product` | Binary | Baseline top coefficients | Consolidates neg_amort + interest_only + lump_sum |
+| `lti_ratio_log` | Continuous | Q2: risk runs along LTI diagonal | Tail spikes to 35.2% at decile 9 |
+| `loan_to_property` | Continuous | Alternative leverage, independent of LTV imputation | Complements LTV |
+| `monthly_debt_est` | Continuous | DTI × income / 100 — absolute debt burden | Magnitude, not just ratio |
+| `is_extreme_lti` | Binary flag | Q2: top decile spike | 35.2% vs 23% baseline |
+| `is_compound_risk` | Binary flag | Q1: LTV 75–90% AND DTI mid-band | Up to 68.9% default |
+| `is_25yr_term` | Binary flag | Term analysis: 56.4% default | 2× any other term category |
+| `is_northeast_under25` | Binary flag | Q3: North-East × under-25 | 50.0% default |
+| `is_northeast_over74` | Binary flag | Q3: North-East × over-74 | 44.7% default |
+| `is_joint_prime_age` | Binary flag | Q5: joint applicants aged 35–54 | 17.5–19.7% default |
+| `is_exotic_product` | Binary flag | Baseline top-3 coefficients | Consolidates neg_amort + interest_only + lump_sum |
 
-### 4.2 Pipeline
+### 4.2 Scikit-Learn ColumnTransformer Pipeline
+
+All transformations fit on train only, applied to test. Zero leakage.
 
 ```
-ColumnTransformer (fit on train only — zero leakage)
-├── StandardScaler      → 8 numeric features
-├── OneHotEncoder       → 14 categorical → 30 columns (drop_first=True)
-└── passthrough         → 7 binary flags
+ColumnTransformer
+├── StandardScaler      → 8 numeric features (mean=0, std=1)
+├── OneHotEncoder       → 14 categorical features (drop_first=True) → 30 columns
+└── passthrough         → 7 binary flags (already 0/1, no scaling needed)
 ```
 
-### 4.3 PCA
+### 4.3 PCA — Compressing Correlated Numeric Features
 
 | Component | Variance | Cumulative | Interpretation |
 |---|---|---|---|
-| PC1 | 34.7% | 34.7% | Wealth — loan amount, property value, income |
-| PC2 | 24.7% | 59.4% | Affordability stress — LTI, loan-to-property |
+| PC1 | 34.7% | 34.7% | Wealth composite — loan amount, property value, income |
+| PC2 | 24.7% | 59.4% | Affordability stress — LTI, loan-to-property, monthly debt |
 | PC3 | 19.1% | 78.5% | Leverage — LTV, DTI |
-| PC4 | 10.1% | 88.6% | Residual |
-| PC5 | 9.4% | 98.0% | Residual |
+| PC4 | 10.1% | 88.6% | Residual variation |
+| PC5 | 9.4% | 98.0% | Residual variation |
 
-### 4.4 K-Means Clustering (K=4)
+### 4.4 K-Means Clustering — Borrower Segmentation
+
+K=4 selected via elbow method. Validated with both PCA and t-SNE visualization.
+
+**Cluster features added:**
+- `cluster_id` (one-hot, 3 columns) — discrete segment membership
+- `cluster_dist` — distance to centroid (atypicality signal)
+- `cluster_default_rate` — **excluded** — target encoding = indirect leakage
 
 ![Cluster Profiles](plots/cluster_profiles.png)
 
-| Cluster | N (Train) | Default Rate | Mean Dist | Profile |
+| Cluster | N (Train) | Default Rate | Mean Dist | Financial Profile |
 |---|---|---|---|---|
-| 2 | 19,498 | **13.8%** | 2.244 | Conservative |
-| 3 | 18,959 | 19.5% | 2.390 | Stable mid-tier |
-| 0 | 44,039 | 25.2% | 1.539 | Standard |
-| 1 | 34,967 | **31.8%** | 1.896 | Stressed |
+| 2 | 19,498 | **13.8%** | 2.244 | Conservative — low LTV, high income, low LTI |
+| 3 | 18,959 | 19.5% | 2.390 | Stable mid-tier — diverse paths to safety |
+| 0 | 44,039 | 25.2% | 1.539 | Standard — typical mortgage borrower |
+| 1 | 34,967 | **31.8%** | 1.896 | Stressed — high LTI, high LTV, product risk |
 
-Added: `cluster_id` (one-hot) + `cluster_dist`. `cluster_default_rate` **excluded** — target leakage.
+**18-point spread** confirms financially meaningful segmentation. Cluster 1 = 30% of
+the portfolio at 31.8% default — the primary target for risk intervention.
 
 ### 4.5 Feature Engineering Impact — Isolated Proof
 
 ![Feature Engineering Impact](plots/feature_engineering_impact.png)
 
-| Stage | Features | ROC-AUC | R² | F1 |
+Same model (Linear Regression), same hyperparameters, same split — only features changed:
+
+| Stage | Features | ROC-AUC | R² | F1 (Default) |
 |---|---|---|---|---|
 | Raw (Part 3) | 34 | 0.693 | 0.1555 | 0.244 |
-| Engineered | 54 | 0.809 | 0.2539 | 0.519 |
+| Engineered (Part 4) | 54 | 0.809 | 0.2539 | 0.519 |
 | **Gain** | +20 | **+0.116** | **+0.098 (+63%)** | **+0.275** |
+
+Feature engineering contributed more improvement than switching model families.
 
 ### 4.6 Final Feature Matrix
 
-| Category | Count |
-|---|---|
-| Numeric (scaled) | 8 |
-| Binary flags | 7 |
-| One-hot encoded | 30 |
-| PCA components | 5 |
-| Cluster features | 4 |
-| **Total** | **54** |
+| Category | Count | Source |
+|---|---|---|
+| Numeric (scaled) | 8 | StandardScaler |
+| Binary flags | 7 | EDA interaction flags |
+| One-hot encoded | 30 | OneHotEncoder (14 categoricals) |
+| PCA components | 5 | Numeric compression |
+| Cluster features | 4 | K-Means (id × 3 + dist) |
+| **Total** | **54** | All fit on train only |
 
 ---
 
