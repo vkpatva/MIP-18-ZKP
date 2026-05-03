@@ -601,6 +601,27 @@ GBR catches **1,277 more actual defaults** while simultaneously generating
 **1,072 fewer false alarms** — reducing both error types simultaneously,
 which only happens with genuinely better discrimination.
 
+**What these numbers mean:**
+
+Feature engineering alone — same OLS model, same hyperparameters — doubled R²
+from 0.109 to 0.254 and improved AUC by 16.7%. This is the most important
+finding in the regression section: the quality of features contributed more
+than any model change.
+
+Ridge adding near-zero improvement over Linear Regression confirms that PCA
+upstream had already resolved the multicollinearity concern — regularization
+was solving a problem that no longer existed.
+
+Gradient Boosting Regressor achieves R²=0.497 because loan default is
+fundamentally non-linear. The compound risk zone (LTV 75–90% AND DTI
+mid-band) reaching 68.9% default cannot be expressed as a sum of independent
+feature contributions — it requires a model that captures multiplicative
+interactions. GBR discovers these automatically through sequential tree splits.
+The confusion matrix confirms genuine discrimination improvement: 1,277 fewer
+missed defaults and 1,072 fewer false alarms simultaneously — reducing both
+error types at once only happens with better underlying signal, not threshold
+adjustment.
+
 ### Feature Importance — Part 5
 
 ![Feature Importance Part 5](plots/feature_importance_part_5.png)
@@ -660,6 +681,21 @@ with `class_weight='balanced'`.
 
 **Primary metric:** Macro F1 | **Secondary:** Recall on Class 2 (High Risk)
 
+**Why business rule thresholds — not statistical splits:**
+
+Median split collapses three operationally distinct tiers into two, losing the
+ability to differentiate standard review from enhanced scrutiny loans. Quantile
+binning forces equal class sizes regardless of risk distribution, producing
+classes with no financial meaning. The 0.20 / 0.40 thresholds were chosen
+because the resulting true default rates (9.4% / 26.7% / 61.8%) span 52.4
+percentage points — validating that the regression scores carry real financial
+signal. The score distribution confirms this: the 0.40 threshold cleanly
+separates the long right tail of stressed borrowers from the main distribution,
+which is why High Risk captures 61.7% true defaults while representing only
+20.7% of the portfolio. Each tier maps directly to a lending action — Low Risk
+to streamlined approval, Medium Risk to standard review, High Risk to enhanced
+scrutiny or manual underwriting.
+
 ---
 
 ## 🧠 Part 8: Classification Models
@@ -691,6 +727,31 @@ validation is the **true default rate within each predicted tier:**
 
 **52.8pp spread** — the model is deployable. Loans flagged as High Risk default at
 61.7% — 2.5× the portfolio average. Low Risk loans at 8.7% — safe for auto-approval.
+
+**Why the classification metrics appear near-perfect:**
+
+The labels were derived from the regression model's predicted scores on the
+same feature matrix the classifiers train on — so the classifiers are learning
+to replicate a deterministic bucketing rule, not predicting raw defaults from
+scratch. Near-perfect replication of a deterministic threshold is expected and
+is not overfitting. The true default rate table above is the operationally
+correct validation: it measures whether the risk assignments align with real
+financial outcomes. A 52.8pp spread between Low and High Risk tiers, with
+High Risk defaulting at 61.7% versus a 24.3% portfolio average, confirms the
+model is deployable.
+
+**Why XGBoost beat Random Forest:**
+Sequential error correction focuses each tree on the loans previous trees got
+wrong — the hard Medium/High boundary cases where the risk is ambiguous.
+Random Forest averages 300 independent trees and cannot iteratively concentrate
+on difficult cases. For this specific boundary problem, sequential learning wins.
+
+**Why both beat KNN:**
+In 54 dimensions, Euclidean distances between all points converge toward the
+same value — nearest neighbors become geometrically meaningless. Tree models
+build explicit split rules using one feature at a time, remaining valid in
+high-dimensional spaces where KNN memorizes without generalizing.
+
 
 ### Evaluation Results
 
