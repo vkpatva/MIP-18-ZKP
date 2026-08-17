@@ -2,3 +2,14 @@
 __pycache__/
 *.pyc
 loan_risk_model.joblib
+*.egg-info/
+.onnx_data/
+
+# EZKL prover-only / bulky / regenerable files.
+# Public verifier bundle is tracked: settings, vk, srs, param hash, sample proof.
+ezkl/pk.key
+ezkl/model.compiled
+ezkl/cal_data.json
+ezkl/random_data.json
+ezkl/input.json
+ezkl/witness.json

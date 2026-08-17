@@ -1,4 +1,4 @@
-"""Score one new loan (or a known row from data.csv).
+"""Score one new loan with the committed MLP (plaintext, no ZK yet).
 
 Examples:
     python infer.py
@@ -13,28 +13,47 @@ import json
 from pathlib import Path
 
 import joblib
+import numpy as np
+import onnxruntime as ort
 import pandas as pd
 
-from loan_ml import add_engineered_features, model_frame, risk_label
+from loan_ml import (
+    COMMITMENT_PATH,
+    ONNX_PATH,
+    PREPROCESS_PATH,
+    loan_feature_vector,
+    risk_label,
+    sha256_file,
+)
 
-MODEL_PATH = Path("loan_risk_model.joblib")
 DEFAULT_LOAN_PATH = Path("examples/new_loan.json")
 
 
-def load_artifact():
-    if not MODEL_PATH.exists():
-        raise SystemExit("No trained model yet. Run: python train.py")
-    return joblib.load(MODEL_PATH)
+def load_artifact() -> dict:
+    if not PREPROCESS_PATH.exists() or not ONNX_PATH.exists():
+        raise SystemExit("No trained MLP yet. Run: python train.py")
+    if COMMITMENT_PATH.exists():
+        expected = COMMITMENT_PATH.read_text(encoding="utf-8").strip()
+        actual = sha256_file(ONNX_PATH)
+        if actual != expected:
+            raise SystemExit(
+                "mlp.onnx does not match model_commitment.txt.\n"
+                "Re-run python train.py, or restore the committed files."
+            )
+    return joblib.load(PREPROCESS_PATH)
+
+
+def score_vector(x_row: np.ndarray) -> float:
+    """Run the ONNX net on one already-preprocessed row (batch size 1)."""
+    session = ort.InferenceSession(str(ONNX_PATH), providers=["CPUExecutionProvider"])
+    inp = np.asarray(x_row, dtype=np.float32).reshape(1, -1)
+    out = session.run(None, {"input": inp})[0]
+    return float(out.reshape(-1)[0])
 
 
 def score_loan(loan: dict, artifact: dict) -> dict:
-    row = pd.DataFrame([loan])
-    featured = add_engineered_features(
-        row, extreme_lti_threshold=artifact["extreme_lti_threshold"]
-    )
-    X = model_frame(featured)
-    pipeline = artifact["pipeline"]
-    default_probability = float(pipeline.predict_proba(X)[0, 1])
+    x_row = loan_feature_vector(loan, artifact)
+    default_probability = score_vector(x_row)
     return {
         "default_probability": round(default_probability, 4),
         "will_likely_default": bool(default_probability >= 0.50),
@@ -45,7 +64,12 @@ def score_loan(loan: dict, artifact: dict) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Predict default risk for one loan")
     parser.add_argument("--loan", type=Path, default=DEFAULT_LOAN_PATH, help="JSON file with one loan")
-    parser.add_argument("--demo-row", type=int, default=None, help="Score a row from data.csv and compare to the true label")
+    parser.add_argument(
+        "--demo-row",
+        type=int,
+        default=None,
+        help="Score a row from data.csv and compare to the true label",
+    )
     args = parser.parse_args()
 
     artifact = load_artifact()
@@ -72,6 +96,7 @@ def main() -> None:
     print(f"Predicted P(default) : {result['default_probability']:.2%}")
     print(f"Likely to default    : {result['will_likely_default']}")
     print(f"Risk tier            : {result['risk_tier']}")
+    print(f"Model commitment C   : {COMMITMENT_PATH.read_text(encoding='utf-8').strip()}")
     print("\nHow to read this:")
     print("  Low Risk    = under 20% chance of default")
     print("  Medium Risk = 20% to 40%")
