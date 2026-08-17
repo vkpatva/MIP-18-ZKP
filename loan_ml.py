@@ -145,6 +145,20 @@ def model_frame(df: pd.DataFrame) -> pd.DataFrame:
     return df[NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES]
 
 
+def loan_feature_vector(loan: dict, artifact: dict) -> np.ndarray:
+    """Turn one loan JSON into the 59 numbers the MLP/ONNX expects.
+
+    This pandas step is *outside* the ZK circuit. The proof later attests
+    only that those numbers were run through the committed net.
+    """
+    row = pd.DataFrame([loan])
+    featured = add_engineered_features(
+        row, extreme_lti_threshold=artifact["extreme_lti_threshold"]
+    )
+    X = model_frame(featured)
+    return np.asarray(artifact["preprocess"].transform(X), dtype=np.float32).reshape(-1)
+
+
 def build_preprocessor() -> ColumnTransformer:
     """Scale numbers and one-hot encode categories.
 

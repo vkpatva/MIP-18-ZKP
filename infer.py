@@ -21,8 +21,7 @@ from loan_ml import (
     COMMITMENT_PATH,
     ONNX_PATH,
     PREPROCESS_PATH,
-    add_engineered_features,
-    model_frame,
+    loan_feature_vector,
     risk_label,
     sha256_file,
 )
@@ -53,12 +52,7 @@ def score_vector(x_row: np.ndarray) -> float:
 
 
 def score_loan(loan: dict, artifact: dict) -> dict:
-    row = pd.DataFrame([loan])
-    featured = add_engineered_features(
-        row, extreme_lti_threshold=artifact["extreme_lti_threshold"]
-    )
-    X = model_frame(featured)
-    x_row = artifact["preprocess"].transform(X)
+    x_row = loan_feature_vector(loan, artifact)
     default_probability = score_vector(x_row)
     return {
         "default_probability": round(default_probability, 4),
