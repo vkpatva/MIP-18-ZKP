@@ -1,0 +1,4 @@
+.venv/
+__pycache__/
+*.pyc
+loan_risk_model.joblib
