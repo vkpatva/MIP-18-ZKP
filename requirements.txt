@@ -3,3 +3,5 @@ numpy>=1.21
 scikit-learn>=1.0
 xgboost>=1.5
 joblib>=1.0
+onnx>=1.14
+onnxruntime>=1.16

@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 loan_risk_model.joblib
+*.egg-info/
+.onnx_data/

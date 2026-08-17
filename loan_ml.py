@@ -2,19 +2,25 @@
 
 This project predicts whether a mortgage is likely to default, then
 maps that probability to Low / Medium / High risk.
+
+The official model is a small MLP (a tiny neural net) so EZKL can later
+prove the exact same forward pass. Feature engineering stays here in
+Python; the ONNX file is only the net, not pandas.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from xgboost import XGBClassifier
 
 # Columns that leak the answer or add no useful signal. Never use these
-# as model inputs. See README.md "Feature Exclusions".
+# as model inputs.
 LEAKAGE_COLUMNS = [
     "credit_score",
     "interest_rate",
@@ -74,6 +80,13 @@ MEDIUM_RISK_MAX = 0.40
 
 CLASS_MAP = {0: "Low Risk", 1: "Medium Risk", 2: "High Risk"}
 
+# One hidden layer, kept small so a ZK circuit can actually prove it.
+HIDDEN_WIDTH = 32
+
+PREPROCESS_PATH = Path("preprocess.joblib")
+ONNX_PATH = Path("mlp.onnx")
+COMMITMENT_PATH = Path("model_commitment.txt")
+
 
 def term_category_from_months(term_months: float) -> str:
     mapping = {360: "30yr", 180: "15yr", 240: "20yr", 300: "25yr"}
@@ -132,9 +145,13 @@ def model_frame(df: pd.DataFrame) -> pd.DataFrame:
     return df[NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES]
 
 
-def build_model() -> Pipeline:
-    """One object that scales numbers, encodes categories, then trains XGBoost."""
-    preprocess = ColumnTransformer(
+def build_preprocessor() -> ColumnTransformer:
+    """Scale numbers and one-hot encode categories.
+
+    This step lives in Python, not in the ZK circuit. The proved net only
+    sees the already-scaled vector of numbers.
+    """
+    return ColumnTransformer(
         transformers=[
             ("num", StandardScaler(), NUMERIC_FEATURES),
             ("bin", "passthrough", BINARY_FEATURES),
@@ -145,23 +162,34 @@ def build_model() -> Pipeline:
             ),
         ]
     )
+
+
+def build_mlp() -> MLPClassifier:
+    """Small 1-hidden-layer net: input -> 32 ReLU neurons -> one probability.
+
+    sklearn trains it; we later copy the same weights into ONNX so EZKL
+    proves this net, not a different one.
+    """
+    return MLPClassifier(
+        hidden_layer_sizes=(HIDDEN_WIDTH,),
+        activation="relu",
+        solver="adam",
+        max_iter=80,
+        random_state=42,
+        # Early stop so training does not run all 80 epochs if the loss
+        # already stopped improving. Still uses the same random_state.
+        early_stopping=True,
+        validation_fraction=0.10,
+        n_iter_no_change=8,
+    )
+
+
+def build_model() -> Pipeline:
+    """Preprocessor + MLP in one sklearn object (used for training)."""
     return Pipeline(
         steps=[
-            ("preprocess", preprocess),
-            (
-                "model",
-                XGBClassifier(
-                    n_estimators=200,
-                    max_depth=5,
-                    learning_rate=0.08,
-                    subsample=0.9,
-                    colsample_bytree=0.9,
-                    objective="binary:logistic",
-                    eval_metric="logloss",
-                    n_jobs=4,
-                    random_state=42,
-                ),
-            ),
+            ("preprocess", build_preprocessor()),
+            ("model", build_mlp()),
         ]
     )
 
@@ -172,3 +200,66 @@ def risk_label(default_probability: float) -> str:
     if default_probability < MEDIUM_RISK_MAX:
         return CLASS_MAP[1]
     return CLASS_MAP[2]
+
+
+def export_mlp_onnx(mlp: MLPClassifier, path: Path) -> int:
+    """Write a tiny ONNX file: Gemm -> ReLU -> Gemm -> Sigmoid.
+
+    ONNX is a list of math ops (not Python). EZKL can read it. Batch size
+    is fixed at 1 so the circuit shape never changes.
+    """
+    from onnx import TensorProto, helper, numpy_helper, save
+    from onnx import checker as onnx_checker
+
+    if len(mlp.coefs_) != 2:
+        raise ValueError("Expected exactly one hidden layer (two weight matrices).")
+
+    # sklearn stores W as (in, out). ONNX Gemm uses Y = X @ W + B with the
+    # same layout, so we copy the arrays as-is.
+    w1 = np.asarray(mlp.coefs_[0], dtype=np.float32)
+    b1 = np.asarray(mlp.intercepts_[0], dtype=np.float32)
+    w2 = np.asarray(mlp.coefs_[1], dtype=np.float32)
+    b2 = np.asarray(mlp.intercepts_[1], dtype=np.float32)
+
+    if w2.shape[1] != 1:
+        raise ValueError(f"Expected a single sigmoid output, got {w2.shape}")
+
+    n_in = int(w1.shape[0])
+    graph = helper.make_graph(
+        nodes=[
+            helper.make_node("Gemm", ["input", "W1", "B1"], ["hidden"], name="hidden_linear"),
+            helper.make_node("Relu", ["hidden"], ["hidden_relu"], name="hidden_relu"),
+            helper.make_node("Gemm", ["hidden_relu", "W2", "B2"], ["logit"], name="output_linear"),
+            helper.make_node("Sigmoid", ["logit"], ["output"], name="output_sigmoid"),
+        ],
+        name="loan_mlp",
+        inputs=[helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, n_in])],
+        outputs=[helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, 1])],
+        initializer=[
+            numpy_helper.from_array(w1, name="W1"),
+            numpy_helper.from_array(b1, name="B1"),
+            numpy_helper.from_array(w2, name="W2"),
+            numpy_helper.from_array(b2, name="B2"),
+        ],
+    )
+    model = helper.make_model(
+        graph,
+        opset_imports=[helper.make_opsetid("", 13)],
+        ir_version=8,
+        producer_name="loan-default-risk-predictor",
+    )
+    onnx_checker.check_model(model)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    save(model, str(path))
+    return n_in
+
+
+def sha256_file(path: Path) -> str:
+    """Fingerprint of a file. Change one weight and this hex string changes."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
