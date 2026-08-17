@@ -10,21 +10,63 @@ XGBoost is stronger on this table (test AUC **0.886**). We still deploy the MLP 
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r verifier/requirements.txt
 ```
 
-`requirements.txt` already includes EZKL. You need `data.csv` in this folder to train (it is large). Inference and verify do not read it if the trained files are already present.
+You need `data.csv` in this folder to **train**. Infer, prove, verify, and the UI do not need it once `mlp.onnx` exists.
 
 ## Commands
 
 ```text
 python train.py                              # MLP + ONNX + SHA-256 commitment C
 python infer.py                              # plaintext score (same ONNX)
-python setup_ezkl.py                         # once: circuit + keys (optional; prove.py can do this)
+python setup_ezkl.py                         # circuit + keys (or let prove.py do this)
 python prove.py --loan examples/new_loan.json
 python verify.py --proof ezkl/proof.json --commitment model_commitment.txt
 ```
 
-On this CPU, a fresh `python setup_ezkl.py` was about **30 seconds**, then `python prove.py` about **15 seconds**, and `python verify.py` under **1 second**. Setup also writes a proving key of about **1.4 GB** under `ezkl/pk.key` (gitignored, prover only).
+On this CPU, `setup_ezkl.py` was about **20–30 seconds**, `prove.py` about **15 seconds**, `verify.py` under **1 second**. Setup writes a proving key of about **1.4 GB** at `ezkl/pk.key` (gitignored, prover only).
+
+Skip `python train.py` unless you deleted `mlp.onnx` / `preprocess.joblib`. Retrain only to get a new net, not to rebuild proofs.
+
+## Verifier UI
+
+This is a local page for someone who should **not** see the loan or the weights.
+
+```text
+python verifier/app.py
+```
+
+Keep that terminal open. In a browser open **http://127.0.0.1:8765**.
+
+1. **Sample packet** — leave both file pickers empty. Click **Stamp the packet**. It uses `ezkl/proof.json` + `ezkl/public.json` from the last `prove.py`. The sample loan is **Low Risk** (~1.4%).
+2. **Your own packet** — after `python prove.py --loan ...`, choose **Proof** = `ezkl/proof.json` and **Public note** = `ezkl/public.json`, then stamp.
+
+Do not upload `mlp.onnx` or the loan JSON. The desk only needs the proof, the public note, and the verifying files already on disk (`vk.key`, `settings.json`, `kzg.srs`, commitment hashes).
+
+Stop the server with Ctrl+C. More detail: [`verifier/README.md`](verifier/README.md).
+
+Terminal-only check (same math, no browser):
+
+```text
+python verify.py --proof ezkl/proof.json --commitment model_commitment.txt
+python verifier/check.py
+```
+
+## Rebuild `ezkl/` from scratch
+
+You can delete the whole folder. It is generated. Keep `mlp.onnx` unless you also want to retrain.
+
+```text
+rm -rf ezkl
+python setup_ezkl.py
+python prove.py --loan examples/new_loan.json
+python verify.py --proof ezkl/proof.json --commitment model_commitment.txt
+```
+
+Then refresh the UI and stamp again. Setup generates a **local** `ezkl/kzg.srs` (do not rely on EZKL’s public download from Python — it can return success without writing a usable file). Prove and verify must share that same SRS.
+
+To free ~1.4 GB without wiping keys, delete only `ezkl/pk.key`. The next `prove.py` will recreate it.
 
 ## What the verifier sees
 
@@ -35,22 +77,16 @@ On this CPU, a fresh `python setup_ezkl.py` was about **30 seconds**, then `pyth
 | risk tier + probability | `data.csv` |
 | SNARK proof | proving key |
 
-`python verify.py` was run successfully **after hiding** `mlp.onnx`, `data.csv`, and `examples/new_loan.json`. It only needs the proof, `ezkl/public.json`, `ezkl/vk.key`, `ezkl/settings.json`, `ezkl/kzg.srs`, and the commitment files.
-
 ## Risk tiers
-
-Same cutoffs as the original model:
 
 - **Low** — default probability under 0.20
 - **Medium** — under 0.40
 - **High** — 0.40 or above
 
-The sample file `examples/new_loan.json` scores as **Low Risk** (~1.4%).
-
 ## Known limits
 
 - Feature engineering (pandas, scaling, one-hot) happens in Python **outside** the circuit. The proof attests the **MLP forward pass**, not “this JSON was a valid loan application.”
-- Trees (XGBoost) are not proved. A tiny MLP is the official model because EZKL consumes ONNX nets.
-- `ezkl/kzg.srs` in this repo is a **local demo SRS** (shared by prove and verify). It is public math, not a secret.
+- Trees (XGBoost) are not proved.
+- `ezkl/kzg.srs` is local demo math, not a secret, but a proof only verifies against the SRS it was built with.
 
-More detail in beginner language: [`docs/zk-flow.md`](docs/zk-flow.md).
+Beginner map of public vs private: [`docs/zk-flow.md`](docs/zk-flow.md).

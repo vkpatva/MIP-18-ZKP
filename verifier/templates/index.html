@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clearing desk — loan-risk proofs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='desk.css') }}" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="mast">
+    <p class="eyebrow">Municipal clearing desk · window 4</p>
+    <h1>Stamp a sealed score.</h1>
+    <p class="lede">
+      You are the verifier. The prover keeps the loan and the weights.
+      You only check whether the public packet matches the committed MLP.
+    </p>
+  </header>
+
+  <main class="desk">
+    <section class="docket" aria-labelledby="in-label">
+      <h2 id="in-label">Packet from the prover</h2>
+      <p class="hint">Leave both empty to stamp the sample already in this repo.</p>
+      <form id="packet" enctype="multipart/form-data">
+        <label class="slot">
+          <span>Proof</span>
+          <small>proof.json</small>
+          <input type="file" name="proof" accept=".json,application/json" />
+        </label>
+        <label class="slot">
+          <span>Public note</span>
+          <small>public.json — risk tier + hashes</small>
+          <input type="file" name="public" accept=".json,application/json" />
+        </label>
+        <button type="submit" id="stamp">Stamp the packet</button>
+      </form>
+      <p class="defaults">
+        {% if defaults_ready %}
+          Sample on disk: <code>{{ proof_name }}</code> · published C starts <code>{{ commitment_preview }}</code>
+        {% else %}
+          No sample proof found. Upload files from <code>python prove.py</code>.
+        {% endif %}
+      </p>
+    </section>
+
+    <section class="blotter" aria-live="polite">
+      <div class="card" id="result" data-state="idle">
+        <p class="card-kicker" id="kicker">Awaiting wax</p>
+        <p class="card-stamp" id="stamp-word">IDLE</p>
+        <p class="card-body" id="story">
+          Nothing has been checked yet. After a stamp you’ll see the risk tier
+          and commitment C — never the applicant’s form.
+        </p>
+        <dl class="facts" id="facts" hidden>
+          <div><dt>Risk tier</dt><dd id="fact-tier">—</dd></div>
+          <div><dt>P(default)</dt><dd id="fact-p">—</dd></div>
+          <div><dt>C (SHA-256)</dt><dd id="fact-c" class="mono">—</dd></div>
+        </dl>
+        <ul class="never">
+          <li>Did not read <code>mlp.onnx</code></li>
+          <li>Did not read the loan JSON</li>
+          <li>Did not read <code>data.csv</code></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='desk.js') }}"></script>
+</body>
+</html>

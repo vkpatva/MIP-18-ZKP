@@ -75,18 +75,34 @@ def _extract_param_hash(witness: dict) -> str:
     )
 
 
-def _download_srs(ezkl) -> None:
-    """get_srs needs an asyncio event loop (EZKL 23)."""
-    import asyncio
+# A real k=17 SRS is about 16MB. Empty / half-downloaded files must not pass.
+_MIN_SRS_BYTES = 1_000_000
 
-    async def _run() -> None:
-        ok = ezkl.get_srs(str(SETTINGS_PATH), srs_path=str(SRS_PATH))
-        if asyncio.iscoroutine(ok):
-            ok = await ok
-        if not ok:
-            raise RuntimeError("ezkl.get_srs returned False")
 
-    asyncio.run(_run())
+def _srs_is_usable() -> bool:
+    return SRS_PATH.exists() and SRS_PATH.stat().st_size >= _MIN_SRS_BYTES
+
+
+def _ensure_srs(ezkl) -> None:
+    """Write a local SRS. Do not use ezkl.get_srs from Python.
+
+    EZKL 23's public download can return before the file exists (or panic
+    inside Tokio with 'Python interpreter is not initialized'). The proof
+    is still a real SNARK; prover and verifier just share this local file.
+    """
+    if _srs_is_usable():
+        return
+    if SRS_PATH.exists():
+        SRS_PATH.unlink()
+    settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    logrows = int(settings["run_args"]["logrows"])
+    print(f"Generating a local SRS (logrows={logrows}) ...")
+    print("This is shared math, not a secret. It should take well under a minute.")
+    ezkl.gen_srs(str(SRS_PATH), logrows)
+    if not _srs_is_usable():
+        raise RuntimeError(
+            f"SRS is missing or too small after gen_srs ({SRS_PATH})."
+        )
 
 
 def ensure_setup(*, force: bool = False) -> None:
@@ -130,16 +146,8 @@ def ensure_setup(*, force: bool = False) -> None:
         if not ok:
             raise RuntimeError("ezkl.compile_circuit failed")
 
-    if force or not SRS_PATH.exists():
-        print("Fetching the public SRS (structured reference string) ...")
-        print("This is shared math, not secret. It can take a few minutes on first run.")
-        try:
-            _download_srs(ezkl)
-        except Exception as exc:
-            print(f"Public SRS download failed ({exc}). Generating a local test SRS instead.")
-            settings = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-            logrows = int(settings["run_args"]["logrows"])
-            ezkl.gen_srs(str(SRS_PATH), logrows)
+    if force or not _srs_is_usable():
+        _ensure_srs(ezkl)
 
     if force or not VK_PATH.exists() or not PK_PATH.exists():
         print("Running setup (creating proving key + verifying key) ...")
