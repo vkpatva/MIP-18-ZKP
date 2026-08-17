@@ -5,3 +5,4 @@ xgboost>=1.5
 joblib>=1.0
 onnx>=1.14
 onnxruntime>=1.16
+ezkl>=23.0.0
