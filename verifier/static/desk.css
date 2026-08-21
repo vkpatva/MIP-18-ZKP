@@ -1,0 +1,236 @@
+:root {
+  --blotter: #15211c;
+  --blotter-deep: #0d1512;
+  --lamp: #efe4cc;
+  --lamp-edge: #d7c7a4;
+  --ink: #142018;
+  --ink-soft: #3d4a42;
+  --brass: #c4a46a;
+  --wax: #9e2b32;
+  --pass: #2f5d3a;
+  --rule: rgba(196, 164, 106, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Newsreader", "Times New Roman", serif;
+  background:
+    radial-gradient(1200px 480px at 12% -10%, rgba(196, 164, 106, 0.18), transparent 55%),
+    radial-gradient(900px 500px at 100% 100%, rgba(158, 43, 50, 0.12), transparent 50%),
+    var(--blotter);
+  color: var(--lamp);
+}
+
+.grain {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.mast {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 3.2rem 1.6rem 1.2rem;
+}
+
+.eyebrow {
+  font-family: "Fragment Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 0.8rem;
+}
+
+h1 {
+  font-weight: 600;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0 0 0.8rem;
+}
+
+.lede {
+  max-width: 38rem;
+  font-size: 1.15rem;
+  line-height: 1.45;
+  color: #d8d0bc;
+  margin: 0;
+}
+
+.desk {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.2rem 1.6rem 4rem;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 1.4rem;
+  align-items: start;
+}
+
+.docket, .card {
+  background: var(--lamp);
+  color: var(--ink);
+  border: 1px solid var(--lamp-edge);
+  box-shadow: 12px 18px 0 rgba(0, 0, 0, 0.28);
+}
+
+.docket {
+  padding: 1.4rem 1.4rem 1.2rem;
+  transform: rotate(-0.4deg);
+}
+
+.docket h2, .card-kicker {
+  font-family: "Fragment Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+}
+
+.hint, .defaults {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
+form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.slot {
+  display: grid;
+  gap: 0.15rem;
+  border: 1px dashed #8a7a58;
+  padding: 0.7rem 0.8rem;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 1.35rem,
+    rgba(20, 32, 24, 0.05) 1.35rem,
+    rgba(20, 32, 24, 0.05) 1.4rem
+  );
+}
+
+.slot span {
+  font-weight: 600;
+}
+
+.slot small {
+  color: var(--ink-soft);
+}
+
+button {
+  font-family: "Fragment Mono", ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--lamp);
+  border: 0;
+  padding: 0.95rem 1rem;
+  cursor: pointer;
+}
+
+button:hover { background: #0b120e; }
+button:disabled { opacity: 0.55; cursor: wait; }
+
+.defaults code, .never code {
+  font-family: "Fragment Mono", ui-monospace, monospace;
+  font-size: 0.78em;
+}
+
+.card {
+  min-height: 22rem;
+  padding: 1.6rem 1.7rem 1.3rem;
+  transform: rotate(0.55deg);
+  position: relative;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid var(--rule);
+  pointer-events: none;
+}
+
+.card-stamp {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin: 0.2rem 0 0.7rem;
+  color: #8a7a58;
+}
+
+.card[data-state="pass"] .card-stamp { color: var(--pass); }
+.card[data-state="fail"] .card-stamp { color: var(--wax); }
+
+.card[data-state="pass"] {
+  animation: slam 0.45s cubic-bezier(0.2, 1.4, 0.3, 1);
+}
+
+@keyframes slam {
+  0% { transform: rotate(0.55deg) scale(1.08); }
+  100% { transform: rotate(0.55deg) scale(1); }
+}
+
+.card-body { margin: 0 0 1rem; max-width: 34rem; }
+
+.facts {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1.1rem;
+}
+
+.facts div {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.4rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.45rem;
+}
+
+dt {
+  font-family: "Fragment Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+dd { margin: 0; }
+
+.mono {
+  font-family: "Fragment Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+
+.never {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.never li::before {
+  content: "× ";
+  color: var(--wax);
+}
+
+@media (max-width: 860px) {
+  .desk { grid-template-columns: 1fr; }
+  .docket, .card { transform: none; }
+}
