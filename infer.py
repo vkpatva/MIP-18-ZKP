@@ -1,8 +1,11 @@
-"""Score one new loan with the committed MLP (plaintext, no ZK yet).
+"""Score one new loan with the committed MLP.
+
+Plaintext by default. Pass --prove to also write a SNARK for the verifier UI.
 
 Examples:
     python infer.py
-    python infer.py --loan examples/new_loan.json
+    python infer.py --loan examples/medium_risk_high_ltv.json
+    python infer.py --loan examples/new_loan.json --prove
     python infer.py --demo-row 0
 """
 
@@ -58,11 +61,27 @@ def score_loan(loan: dict, artifact: dict) -> dict:
         "default_probability": round(default_probability, 4),
         "will_likely_default": bool(default_probability >= 0.50),
         "risk_tier": risk_label(default_probability),
+        "x_row": x_row,
+        "raw_probability": default_probability,
     }
 
 
+def print_plaintext_score(loan_path: Path, result: dict) -> None:
+    print(f"Loan file: {loan_path}")
+    print(f"Predicted P(default) : {result['default_probability']:.2%}")
+    print(f"Likely to default    : {result['will_likely_default']}")
+    print(f"Risk tier            : {result['risk_tier']}")
+    print(f"Model commitment C   : {COMMITMENT_PATH.read_text(encoding='utf-8').strip()}")
+    print("\nHow to read this:")
+    print("  Low Risk    = under 20% chance of default")
+    print("  Medium Risk = 20% to 40%")
+    print("  High Risk   = 40% or higher")
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Predict default risk for one loan")
+    parser = argparse.ArgumentParser(
+        description="Predict default risk for one loan; optionally prove it"
+    )
     parser.add_argument("--loan", type=Path, default=DEFAULT_LOAN_PATH, help="JSON file with one loan")
     parser.add_argument(
         "--demo-row",
@@ -70,11 +89,18 @@ def main() -> None:
         default=None,
         help="Score a row from data.csv and compare to the true label",
     )
+    parser.add_argument(
+        "--prove",
+        action="store_true",
+        help="After scoring, build a SNARK (writes ezkl/proof.json for the UI)",
+    )
     args = parser.parse_args()
 
     artifact = load_artifact()
 
     if args.demo_row is not None:
+        if args.prove:
+            raise SystemExit("--prove needs a loan JSON file, not --demo-row")
         df = pd.read_csv("data.csv")
         row = df.iloc[args.demo_row]
         loan = row.drop(labels=["Status"], errors="ignore").to_dict()
@@ -91,16 +117,18 @@ def main() -> None:
 
     loan = json.loads(args.loan.read_text())
     result = score_loan(loan, artifact)
+    print_plaintext_score(args.loan, result)
 
-    print(f"Loan file: {args.loan}")
-    print(f"Predicted P(default) : {result['default_probability']:.2%}")
-    print(f"Likely to default    : {result['will_likely_default']}")
-    print(f"Risk tier            : {result['risk_tier']}")
-    print(f"Model commitment C   : {COMMITMENT_PATH.read_text(encoding='utf-8').strip()}")
-    print("\nHow to read this:")
-    print("  Low Risk    = under 20% chance of default")
-    print("  Medium Risk = 20% to 40%")
-    print("  High Risk   = 40% or higher")
+    if args.prove:
+        from prove import prove_loan
+
+        print("\nBuilding SNARK (does not print the loan or weights) ...")
+        prove_loan(
+            args.loan,
+            artifact=artifact,
+            x_row=result["x_row"],
+            plaintext_p=result["raw_probability"],
+        )
 
 
 if __name__ == "__main__":

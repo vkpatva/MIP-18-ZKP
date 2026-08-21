@@ -1,0 +1,21 @@
+{
+  "loan_limit": "conforming",
+  "gender": "Female",
+  "approved_in_advance": "no",
+  "loan_type": "type_1",
+  "business_or_commercial": "no",
+  "loan_amount": 360000,
+  "term_months": 360,
+  "negative_amortization": "no",
+  "interest_only_flag": "no",
+  "lump_sum_payment_flag": "no",
+  "property_value": 380000,
+  "occupancy_type": "primary_residence",
+  "total_units": "single_unit",
+  "income": 52000,
+  "age_group": "25-34",
+  "submission_channel": "broker",
+  "loan_to_value_ratio": 94.74,
+  "region": "central",
+  "debt_to_income_ratio": 44
+}

@@ -1,9 +1,11 @@
 """Prove that a private loan was scored by the committed MLP.
 
-Does not print the loan JSON or any weight tensors.
+Scores the loan first (same as infer.py), then writes a SNARK. Does not
+print the loan JSON or any weight tensors.
 
 Run:
     python prove.py --loan examples/new_loan.json
+    python infer.py --loan examples/new_loan.json --prove
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-from infer import load_artifact, score_vector
+from infer import load_artifact, print_plaintext_score, score_loan, score_vector
 from loan_ml import COMMITMENT_PATH, loan_feature_vector, risk_label
 from setup_ezkl import _extract_param_hash, ensure_setup
 from zk_paths import (
@@ -45,21 +47,28 @@ def _probability_from_witness(witness: dict) -> float:
     raise RuntimeError("EZKL witness is missing rescaled_outputs")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Prove MLP scoring of one private loan")
-    parser.add_argument("--loan", type=Path, default=Path("examples/new_loan.json"))
-    parser.add_argument("--proof", type=Path, default=PROOF_PATH, help="Where to write the proof")
-    parser.add_argument("--public", type=Path, default=PUBLIC_PATH, help="Where to write public outputs")
-    args = parser.parse_args()
-
-    if not args.loan.exists():
-        raise SystemExit(f"Loan file not found: {args.loan}")
+def prove_loan(
+    loan_path: Path,
+    proof_path: Path = PROOF_PATH,
+    public_path: Path = PUBLIC_PATH,
+    *,
+    artifact: dict | None = None,
+    x_row: np.ndarray | None = None,
+    plaintext_p: float | None = None,
+) -> dict:
+    """Score a private loan (if needed) and write proof.json + public.json."""
+    if not loan_path.exists():
+        raise SystemExit(f"Loan file not found: {loan_path}")
 
     # Feature engineering stays in Python (not in the circuit).
-    artifact = load_artifact()
-    loan = json.loads(args.loan.read_text(encoding="utf-8"))
-    x_row = loan_feature_vector(loan, artifact)
-    plaintext_p = score_vector(x_row)
+    if artifact is None:
+        artifact = load_artifact()
+    if x_row is None or plaintext_p is None:
+        loan = json.loads(loan_path.read_text(encoding="utf-8"))
+        if x_row is None:
+            x_row = loan_feature_vector(loan, artifact)
+        if plaintext_p is None:
+            plaintext_p = score_vector(x_row)
 
     ensure_setup(force=False)
 
@@ -84,13 +93,12 @@ def main() -> None:
             "Re-run: python setup_ezkl.py --force"
         )
 
-    print("Building SNARK (does not print the loan or weights) ...")
-    args.proof.parent.mkdir(parents=True, exist_ok=True)
+    proof_path.parent.mkdir(parents=True, exist_ok=True)
     ok = ezkl.prove(
         str(WITNESS_PATH),
         str(COMPILED_PATH),
         str(PK_PATH),
-        str(args.proof),
+        str(proof_path),
         srs_path=str(SRS_PATH),
     )
     if not ok:
@@ -107,13 +115,39 @@ def main() -> None:
         "default_probability": round(zk_p, 4),
         "plaintext_probability": round(plaintext_p, 4),
     }
-    args.public.write_text(json.dumps(public, indent=2) + "\n", encoding="utf-8")
+    public_path.write_text(json.dumps(public, indent=2) + "\n", encoding="utf-8")
 
-    print(f"Proof written to {args.proof}")
-    print(f"Public outputs written to {args.public}")
+    print(f"Proof written to {proof_path}")
+    print(f"Public outputs written to {public_path}")
     print(f"Model commitment C : {commitment}")
     print(f"Risk tier          : {public['risk_tier']}")
     print(f"ZK P(default)      : {public['default_probability']:.2%}")
+    return public
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Score a private loan, then prove it")
+    parser.add_argument("--loan", type=Path, default=Path("examples/new_loan.json"))
+    parser.add_argument("--proof", type=Path, default=PROOF_PATH, help="Where to write the proof")
+    parser.add_argument("--public", type=Path, default=PUBLIC_PATH, help="Where to write public outputs")
+    args = parser.parse_args()
+
+    if not args.loan.exists():
+        raise SystemExit(f"Loan file not found: {args.loan}")
+
+    artifact = load_artifact()
+    loan = json.loads(args.loan.read_text(encoding="utf-8"))
+    result = score_loan(loan, artifact)
+    print_plaintext_score(args.loan, result)
+    print("\nBuilding SNARK (does not print the loan or weights) ...")
+    prove_loan(
+        args.loan,
+        proof_path=args.proof,
+        public_path=args.public,
+        artifact=artifact,
+        x_row=result["x_row"],
+        plaintext_p=result["raw_probability"],
+    )
 
 
 if __name__ == "__main__":

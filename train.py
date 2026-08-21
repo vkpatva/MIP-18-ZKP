@@ -138,7 +138,7 @@ def main() -> None:
     }
     joblib.dump(artifact, PREPROCESS_PATH)
     print(f"Saved preprocessor (needed for infer/prove, not for verify) to {PREPROCESS_PATH}")
-    print("Next step: python infer.py")
+    print("Next step: python infer.py --loan examples/new_loan.json --prove")
 
 
 if __name__ == "__main__":

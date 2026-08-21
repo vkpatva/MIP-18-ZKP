@@ -1,0 +1,21 @@
+{
+  "loan_limit": "non_conforming",
+  "gender": "Joint",
+  "approved_in_advance": "yes",
+  "loan_type": "type_1",
+  "business_or_commercial": "no",
+  "loan_amount": 890000,
+  "term_months": 360,
+  "negative_amortization": "no",
+  "interest_only_flag": "no",
+  "lump_sum_payment_flag": "no",
+  "property_value": 1250000,
+  "occupancy_type": "primary_residence",
+  "total_units": "single_unit",
+  "income": 185000,
+  "age_group": "35-44",
+  "submission_channel": "direct",
+  "loan_to_value_ratio": 71.2,
+  "region": "North-East",
+  "debt_to_income_ratio": 28
+}

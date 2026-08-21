@@ -1,0 +1,21 @@
+{
+  "loan_limit": "conforming",
+  "gender": "Male",
+  "approved_in_advance": "no",
+  "loan_type": "type_3",
+  "business_or_commercial": "yes",
+  "loan_amount": 510000,
+  "term_months": 240,
+  "negative_amortization": "no",
+  "interest_only_flag": "no",
+  "lump_sum_payment_flag": "yes",
+  "property_value": 560000,
+  "occupancy_type": "investment",
+  "total_units": "two_units",
+  "income": 72000,
+  "age_group": "65-74",
+  "submission_channel": "broker",
+  "loan_to_value_ratio": 91.07,
+  "region": "south",
+  "debt_to_income_ratio": 48
+}

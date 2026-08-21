@@ -1,0 +1,21 @@
+{
+  "loan_limit": "conforming",
+  "gender": "Male",
+  "approved_in_advance": "no",
+  "loan_type": "type_2",
+  "business_or_commercial": "no",
+  "loan_amount": 420000,
+  "term_months": 300,
+  "negative_amortization": "yes",
+  "interest_only_flag": "yes",
+  "lump_sum_payment_flag": "no",
+  "property_value": 440000,
+  "occupancy_type": "primary_residence",
+  "total_units": "single_unit",
+  "income": 41000,
+  "age_group": "55-64",
+  "submission_channel": "broker",
+  "loan_to_value_ratio": 95.45,
+  "region": "North",
+  "debt_to_income_ratio": 52
+}

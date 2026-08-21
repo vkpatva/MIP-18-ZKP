@@ -19,13 +19,13 @@ You need `data.csv` in this folder to **train**. Infer, prove, verify, and the U
 
 ```text
 python train.py                              # MLP + ONNX + SHA-256 commitment C
-python infer.py                              # plaintext score (same ONNX)
+python infer.py --loan examples/new_loan.json
+python infer.py --loan examples/new_loan.json --prove
 python setup_ezkl.py                         # circuit + keys (or let prove.py do this)
-python prove.py --loan examples/new_loan.json
 python verify.py --proof ezkl/proof.json --commitment model_commitment.txt
 ```
 
-On this CPU, `setup_ezkl.py` was about **20–30 seconds**, `prove.py` about **15 seconds**, `verify.py` under **1 second**. Setup writes a proving key of about **1.4 GB** at `ezkl/pk.key` (gitignored, prover only).
+`infer.py` prints the plaintext score. Add `--prove` to also build the SNARK (`ezkl/proof.json`) for the UI. `python prove.py --loan ...` does the same combined step. On this CPU, `setup_ezkl.py` was about **20–30 seconds**, proving about **15 seconds**, `verify.py` under **1 second**. Setup writes a proving key of about **1.4 GB** at `ezkl/pk.key` (gitignored, prover only).
 
 Skip `python train.py` unless you deleted `mlp.onnx` / `preprocess.joblib`. Retrain only to get a new net, not to rebuild proofs.
 
@@ -39,8 +39,8 @@ python verifier/app.py
 
 Keep that terminal open. In a browser open **http://127.0.0.1:8765**.
 
-1. **Sample packet** — leave both file pickers empty. Click **Stamp the packet**. It uses `ezkl/proof.json` + `ezkl/public.json` from the last `prove.py`. The sample loan is **Low Risk** (~1.4%).
-2. **Your own packet** — after `python prove.py --loan ...`, choose **Proof** = `ezkl/proof.json` and **Public note** = `ezkl/public.json`, then stamp.
+1. **Sample packet** — leave both file pickers empty. Click **Stamp the packet**. It uses `ezkl/proof.json` + `ezkl/public.json` from the last `--prove`. The sample loan is **Low Risk** (~1.4%).
+2. **Your own packet** — after `python infer.py --loan ... --prove`, choose **Proof** = `ezkl/proof.json` and **Public note** = `ezkl/public.json`, then stamp.
 
 Do not upload `mlp.onnx` or the loan JSON. The desk only needs the proof, the public note, and the verifying files already on disk (`vk.key`, `settings.json`, `kzg.srs`, commitment hashes).
 
